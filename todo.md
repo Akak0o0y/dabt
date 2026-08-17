@@ -121,4 +121,4 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Disable the evaluation control while an authenticated persistence mutation is pending to prevent duplicate audit snapshots
 - [x] Let an owner select a persisted snapshot and replay its stored bilingual audit record and classification evidence through `evidenceGet`
 - [x] Add regression coverage proving a persisted snapshot can be retrieved as a full evidence record, not only listed as metadata
-- [ ] Commit and push the durable evidence and Python bytecode cleanup update to GitHub
+- [x] Commit and push the durable evidence and Python bytecode cleanup update to GitHub
