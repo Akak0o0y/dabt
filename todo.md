@@ -115,3 +115,9 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Expose the selected NDMO classification mapping’s confidence and cited rationale in the policy result and demo UI
 - [x] Make classification-evidence rendering resilient to a stale API response and restart the local FastAPI process before live verification
 - [x] Commit and push the completed classification-inference and protected-release hardening updates to GitHub
+- [x] Add Python bytecode exclusions to `.gitignore` and remove all tracked `__pycache__` and `*.pyc` artifacts
+- [x] Persist immutable audit evidence snapshots with decision, classification evidence, bilingual audit record, and policy-map version
+- [x] Provide a durable evidence-register view that retrieves persisted audit snapshots through tRPC
+- [x] Disable the evaluation control while an authenticated persistence mutation is pending to prevent duplicate audit snapshots
+- [x] Let an owner select a persisted snapshot and replay its stored bilingual audit record and classification evidence through `evidenceGet`
+- [x] Add regression coverage proving a persisted snapshot can be retrieved as a full evidence record, not only listed as metadata

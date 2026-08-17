@@ -17,6 +17,7 @@ def test_retrieval_evaluate_returns_full_decision() -> None:
     assert body["decision"] == "ALLOW_WITH_REDACTION"
     assert body["redacted_document"] != "National ID 1000000008"
     assert body["audit"]["legal_review_disclaimer_en"]
+    assert body["policy_map_version"] == main.COMPLIANCE_MAP.version
 
 
 def test_action_gate_is_documented_not_implemented() -> None:

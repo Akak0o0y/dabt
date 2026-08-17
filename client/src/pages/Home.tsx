@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { Ban, Braces, Copy, Eye, FileText, Globe2, Layers3, Play, RotateCcw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { AuditLog, type ClassificationEvidence, type DabtAudit } from "@/components/AuditLog";
 import { ConfidenceFlag } from "@/components/ConfidenceFlag";
 import { DecisionBadge } from "@/components/DecisionBadge";
 import { FindingsPanel, type DabtFinding } from "@/components/FindingsPanel";
 import { Button } from "@/components/ui/button";
+import { startLogin } from "@/const";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { getReleaseState } from "@/lib/releaseState";
@@ -13,6 +15,7 @@ type DabtResult = {
   decision: string;
   decision_rule_id: string | null;
   classification: string;
+  policy_map_version: string;
   classification_evidence: ClassificationEvidence;
   findings: DabtFinding[];
   redacted_document: string;
@@ -37,15 +40,32 @@ const classificationStyle: Record<string, string> = {
 };
 
 export default function Home() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const trpcUtils = trpc.useUtils();
   const [document, setDocument] = useState(SAMPLE_DOCUMENT);
   const [crossBorder, setCrossBorder] = useState(true);
   const [lawfulBasis, setLawfulBasis] = useState("legitimate_interest");
   const [result, setResult] = useState<DabtResult | null>(null);
   const [copied, setCopied] = useState(false);
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
 
   const evaluate = trpc.dabt.evaluate.useMutation({
     onSuccess: data => setResult(data as DabtResult),
   });
+  const evaluateAndPersist = trpc.dabt.evaluateAndPersist.useMutation({
+    onSuccess: async data => {
+      setResult(data.evaluation as DabtResult);
+      await trpcUtils.dabt.evidenceList.invalidate();
+    },
+  });
+  const evidenceList = trpc.dabt.evidenceList.useQuery(
+    { limit: 5 },
+    { enabled: isAuthenticated },
+  );
+  const selectedEvidence = trpc.dabt.evidenceGet.useQuery(
+    { id: selectedSnapshotId ?? "" },
+    { enabled: Boolean(selectedSnapshotId) },
+  );
 
   const outcomeHint = useMemo(() => {
     if (!result) return "Run the gate to produce a traceable retrieval decision.";
@@ -59,7 +79,12 @@ export default function Home() {
   }, [result]);
 
   const runEvaluation = () => {
-    evaluate.mutate({ document, crossBorder, lawfulBasis, sector: "development", eventType: "disclosure" });
+    const input = { document, crossBorder, lawfulBasis, sector: "development", eventType: "disclosure" };
+    if (isAuthenticated) {
+      evaluateAndPersist.mutate(input);
+      return;
+    }
+    evaluate.mutate(input);
   };
 
   const reset = () => {
@@ -85,6 +110,17 @@ export default function Home() {
     rationale_ar: "تعذر الحصول على دليل التصنيف من استجابة واجهة البرمجة؛ لا ينبغي الاعتماد على التصنيف المعروض حتى يتم تحديث خدمة السياسة.",
     citation: null,
   };
+  const replayedEvidence = useMemo(() => {
+    if (!selectedEvidence.data) return null;
+    try {
+      return {
+        audit: JSON.parse(selectedEvidence.data.auditJson) as DabtAudit,
+        classificationEvidence: JSON.parse(selectedEvidence.data.classificationEvidenceJson) as ClassificationEvidence,
+      };
+    } catch {
+      return null;
+    }
+  }, [selectedEvidence.data]);
 
   return (
     <main className="blueprint-shell">
@@ -142,12 +178,17 @@ export default function Home() {
             </label>
           </div>
           <div className="input-actions">
-            <Button className="evaluate-button" onClick={runEvaluation} disabled={evaluate.isPending || !document.trim()}>
-              <Play size={15} fill="currentColor" /> {evaluate.isPending ? "EVALUATING…" : "RUN RETRIEVAL GATE"}
+            <Button className="evaluate-button" onClick={runEvaluation} disabled={evaluate.isPending || evaluateAndPersist.isPending || !document.trim()}>
+              <Play size={15} fill="currentColor" /> {evaluate.isPending || evaluateAndPersist.isPending ? "EVALUATING…" : isAuthenticated ? "EVALUATE + PERSIST EVIDENCE" : "RUN RETRIEVAL GATE"}
             </Button>
             <Button variant="ghost" className="reset-button" onClick={reset}><RotateCcw size={15} /> RESET</Button>
           </div>
-          {evaluate.error ? <div className="error-plane"><TriangleAlert size={16} />{evaluate.error.message}</div> : null}
+          {evaluate.error || evaluateAndPersist.error ? <div className="error-plane"><TriangleAlert size={16} />{(evaluate.error ?? evaluateAndPersist.error)?.message}</div> : null}
+          <p className="persistence-status">
+            {authLoading ? "Checking evidence vault access…" : isAuthenticated
+              ? "Authenticated evaluations are stored as immutable, privacy-minimised evidence snapshots."
+              : <>Run a demonstration now, or <button onClick={() => startLogin()}>sign in</button> to persist a durable evidence snapshot.</>}
+          </p>
         </section>
 
         <section className="outcome-panel">
@@ -186,6 +227,33 @@ export default function Home() {
       </section>
 
       {result ? <AuditLog audit={result.audit} classificationEvidence={classificationEvidence} /> : <section className="blueprint-panel audit-panel empty-audit"><p className="eyebrow">04 / EVIDENCE REGISTER</p><h2>Awaiting a policy decision</h2><p>The bilingual record will expose every fired rule, subdomain mapping, confidence status, and the mandatory legal-review caveat.</p></section>}
+
+      <section className="blueprint-panel evidence-vault">
+        <div className="panel-heading">
+          <div><p className="eyebrow">05 / DURABLE EVIDENCE VAULT</p><h2>Persisted audit snapshots</h2></div>
+          <ShieldCheck size={19} />
+        </div>
+        {!isAuthenticated ? (
+          <div className="vault-empty">
+            <p>Sign in to retain decision evidence across sessions. Source payloads and release payloads are never stored—only a SHA-256 source hash, integrity hash, policy decision, classification evidence, bilingual audit record, and map version.</p>
+            <Button variant="outline" onClick={() => startLogin()}>SIGN IN TO OPEN VAULT</Button>
+          </div>
+        ) : evidenceList.isLoading ? <p className="vault-empty">Loading owner-scoped evidence snapshots…</p>
+          : evidenceList.data?.length ? <div className="snapshot-list">
+            {evidenceList.data.map(snapshot => <button className="snapshot-row" onClick={() => setSelectedSnapshotId(snapshot.id)} key={snapshot.id}>
+              <div><span className="snapshot-id">{snapshot.id.slice(0, 18)}…</span><strong>{snapshot.decision}</strong></div>
+              <div><span>CLASSIFICATION</span><b>{snapshot.classification}</b></div>
+              <div><span>POLICY MAP</span><b>{snapshot.policyMapVersion}</b></div>
+              <div><span>INTEGRITY SHA-256</span><b>{snapshot.integrityHash.slice(0, 16)}…</b></div>
+              <time>{new Date(snapshot.createdAt).toLocaleString()}</time>
+            </button>)}
+          </div> : <p className="vault-empty">No snapshots yet. Your next authenticated evaluation will be written to this evidence vault.</p>}
+        {selectedEvidence.isLoading ? <p className="vault-empty">Retrieving immutable snapshot evidence…</p> : null}
+        {replayedEvidence ? <div className="snapshot-replay">
+          <p className="eyebrow">REPLAYED SNAPSHOT / IMMUTABLE RECORD</p>
+          <AuditLog audit={replayedEvidence.audit} classificationEvidence={replayedEvidence.classificationEvidence} />
+        </div> : null}
+      </section>
 
       <footer className="app-footer">
         <span>RESEARCH-GROUNDED COMPLIANCE MAP</span><i /><span>ALL MAPPINGS REQUIRE QUALIFIED LEGAL REVIEW</span><span lang="ar" dir="rtl">كل التعيينات تتطلب مراجعة قانونية مؤهلة</span>

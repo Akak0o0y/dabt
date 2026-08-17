@@ -87,7 +87,7 @@ def evaluate_retrieval(payload: RetrievalEvaluatePayload) -> dict[str, Any]:
         ),
         payload.timestamp,
     ).to_dict()
-    return {**result, **caveat_payload()}
+    return {**result, "policy_map_version": COMPLIANCE_MAP.version, **caveat_payload()}
 
 
 @app.post("/v1/action/evaluate", status_code=501)
