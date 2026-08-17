@@ -1,0 +1,362 @@
+version: "0.1.0-research-grounded"
+sources:
+  pdpl: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+  ndmo: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
+  nca_ecc: "https://nca.gov.sa/en/regulatory-documents/controls-list/ecc/"
+  sama_csf: "https://rulebook.sama.gov.sa/en/cyber-security-framework-2"
+classification:
+  finding_levels:
+    saudi_national_id:
+      level: Confidential
+      confidence_level: verified
+      requires_legal_review: true
+    iqama:
+      level: Confidential
+      confidence_level: verified
+      requires_legal_review: true
+    saudi_iban:
+      level: Confidential
+      confidence_level: verified
+      requires_legal_review: true
+    saudi_mobile:
+      level: Confidential
+      confidence_level: verified
+      requires_legal_review: true
+    saudi_commercial_registration:
+      level: Confidential
+      confidence_level: inferred
+      requires_legal_review: true
+    sensitive_data.health:
+      level: Secret
+      confidence_level: inferred
+      requires_legal_review: true
+    sensitive_data.biometric:
+      level: Secret
+      confidence_level: inferred
+      requires_legal_review: true
+    sensitive_data.genetic:
+      level: Secret
+      confidence_level: inferred
+      requires_legal_review: true
+    sensitive_data.criminal:
+      level: Secret
+      confidence_level: inferred
+      requires_legal_review: true
+    sensitive_data.credit:
+      level: Secret
+      confidence_level: inferred
+      requires_legal_review: true
+    sensitive_data.default:
+      level: Confidential
+      confidence_level: inferred
+      requires_legal_review: true
+  sector_defaults:
+    development:
+      level: Public
+      confidence_level: verified
+      requires_legal_review: true
+    security:
+      level: Top Secret
+      confidence_level: verified
+      requires_legal_review: true
+    political:
+      level: Top Secret
+      confidence_level: verified
+      requires_legal_review: true
+rules:
+  - id: NDMO-TOP-SECRET-DENY
+    priority: 10
+    decision: DENY
+    framework: NDMO
+    citation:
+      article: "Section 4.3 — Data Classification Levels"
+      quote: "Data shall be classified as ‘Top Secret’, if unauthorized access to or disclosure of such data or its content adversely and exceptionally affects in a way that is difficult to resolve."
+      source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
+    condition:
+      classification: "Top Secret"
+    rationale_en: "Top Secret data requires the highest protection. This reference implementation denies agent retrieval pending a legally reviewed, purpose-specific exception." 
+    rationale_ar: "تتطلب البيانات المصنفة «سري للغاية» أعلى درجات الحماية. يمنع هذا التطبيق المرجعي استرجاع الوكيل لها لحين وجود استثناء محدد الغرض ومراجع قانونياً."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: SAMA_CSF
+        control_id: "3.3"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: verified
+    requires_legal_review: true
+
+  - id: PDPL-ART6-4-SENSITIVE-LEGITIMATE-INTEREST
+    priority: 20
+    decision: DENY
+    framework: PDPL
+    citation:
+      article: "Article 6(4)"
+      quote: "If the Processing is necessary for the purpose of legitimate interest of the Controller, without prejudice to the rights and interests of the Data Subject, and provided that no Sensitive Data is to be processed."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      lawful_basis: legitimate_interest
+      contains_sensitive_data: true
+    rationale_en: "Legitimate interest cannot be used for Sensitive Data. The requested retrieval is therefore denied under the declared lawful basis."
+    rationale_ar: "لا يجوز استخدام المصلحة المشروعة لمعالجة البيانات الحساسة. لذا يُمنع الاسترجاع المطلوب بموجب الأساس القانوني المعلن."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: NCA_ECC_2_2024
+        control_id: "2-13"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: SAMA_CSF
+        control_id: "3.2"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: verified
+    requires_legal_review: true
+
+  - id: PDPL-ART15-6-SENSITIVE-DISCLOSURE
+    priority: 30
+    decision: DENY
+    framework: PDPL
+    citation:
+      article: "Article 15(6)"
+      quote: "The Disclosure is necessary to achieve legitimate interests of the Controller, without prejudice to the rights and interests of the Data Subject, and provided that no Sensitive Data is to be processed."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      event_type: disclosure
+      lawful_basis: legitimate_interest
+      contains_sensitive_data: true
+    rationale_en: "A disclosure justified by legitimate interest cannot include Sensitive Data."
+    rationale_ar: "لا يجوز أن يتضمن الإفصاح المستند إلى المصلحة المشروعة بيانات حساسة."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: SAMA_CSF
+        control_id: "3.3"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: verified
+    requires_legal_review: true
+
+  - id: PDPL-ART23-HEALTH-DATA-RESTRICTION
+    priority: 40
+    decision: REVIEW
+    framework: PDPL
+    citation:
+      article: "Article 23(1)"
+      quote: "Restricting the right to access Health Data, including medical files, to the minimum number of employees or workers and only to the extent necessary to provide the required Health Services."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      contains_sensitive_category: health
+    rationale_en: "Health Data needs purpose-specific, minimum-access controls. Escalate to an authorised human reviewer before agent retrieval."
+    rationale_ar: "تحتاج البيانات الصحية إلى ضوابط وصول محددة الغرض وبأقل نطاق. تُحال إلى مراجع بشري مخوّل قبل استرجاع الوكيل."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-2"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: verified
+    requires_legal_review: true
+
+  - id: PDPL-ART24-CREDIT-DATA-CONSENT
+    priority: 50
+    decision: REVIEW
+    framework: PDPL
+    citation:
+      article: "Article 24(1)"
+      quote: "Implementing appropriate measures to verify that the Data Subject has given their explicit consent to the Collection of the Personal Data, changing the purpose of the Collection, or Disclosure or Publishing of the Personal Data in accordance with the provisions of this Law and the Credit Information Law."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      contains_sensitive_category: credit
+    rationale_en: "Credit Data requires explicit-consent verification and is routed for review in this reference implementation."
+    rationale_ar: "تتطلب البيانات الائتمانية التحقق من الموافقة الصريحة، ولذلك تُحال للمراجعة في هذا التطبيق المرجعي."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: SAMA_CSF
+        control_id: "3.2"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: inferred
+    requires_legal_review: true
+
+  - id: PDPL-ART29-2C-CROSSBORDER-MINIMISATION
+    priority: 200
+    decision: ALLOW_WITH_REDACTION
+    framework: PDPL
+    citation:
+      article: "Article 29(2)(c)"
+      quote: "The Transfer or Disclosure shall be limited to the minimum amount of Personal Data needed."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      cross_border: true
+      contains_personal_data: true
+    rationale_en: "The cross-border payload must be minimised. Dabt permits retrieval only after detected Personal Data is redacted."
+    rationale_ar: "يجب تقليل حمولة النقل عبر الحدود إلى الحد الأدنى. يسمح ضبط بالاسترجاع فقط بعد حجب البيانات الشخصية المكتشفة."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: NCA_ECC_2_2024
+        control_id: "4-2"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: SAMA_CSF
+        control_id: "3.4"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 5
+    confidence_level: verified
+    requires_legal_review: true
+    obligation:
+      scope: personal_data
+      strategy: full
+      confidence_level: verified
+      requires_legal_review: true
+
+  - id: PDPL-ART15-5-ANONYMISED-DISCLOSURE
+    priority: 210
+    decision: ALLOW_WITH_REDACTION
+    framework: PDPL
+    citation:
+      article: "Article 15(5)"
+      quote: "The Disclosure will only involve subsequent Processing in a form that makes it impossible to directly or indirectly identify the Data Subject."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      event_type: disclosure
+      contains_personal_data: true
+    rationale_en: "Redaction supports disclosure in a form that cannot directly or indirectly identify the Data Subject."
+    rationale_ar: "يدعم الحجب الإفصاح بصيغة لا تمكّن من تحديد هوية صاحب البيانات بشكل مباشر أو غير مباشر."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: NCA_ECC_2_2024
+        control_id: "2-12"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 5
+    confidence_level: verified
+    requires_legal_review: true
+    obligation:
+      scope: personal_data
+      strategy: last_four
+      confidence_level: inferred
+      requires_legal_review: true
+
+  - id: PDPL-ART11-3-MINIMISATION
+    priority: 220
+    decision: ALLOW_WITH_REDACTION
+    framework: PDPL
+    citation:
+      article: "Article 11(3)"
+      quote: "The content of the Personal Data shall be appropriate and limited to the minimum amount necessary to achieve the purpose of the Collection."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      contains_personal_data: true
+      requires_minimisation: true
+    rationale_en: "Detected Personal Data is reduced to the minimum operational payload through redaction."
+    rationale_ar: "تُقلص البيانات الشخصية المكتشفة إلى الحد الأدنى التشغيلي عبر الحجب."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: verified
+    requires_legal_review: true
+    obligation:
+      scope: personal_data
+      strategy: full
+      confidence_level: verified
+      requires_legal_review: true
+
+  - id: NDMO-SECRET-RESTRICTED-ACCESS
+    priority: 230
+    decision: ALLOW_WITH_REDACTION
+    framework: NDMO
+    citation:
+      article: "Section 4.2 — Principle 6: Need to Know"
+      quote: "Access to data should be provided only if there is legitimate requirement for usage of the data based on authorization and access controls and for the least number of people possible."
+      source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
+    condition:
+      classification: Secret
+      agent_authorised: true
+    rationale_en: "Secret data requires need-to-know access. This reference path redacts detected identifiers and records the decision for review."
+    rationale_ar: "تتطلب البيانات السرية وصولاً على أساس الحاجة إلى المعرفة. يحجب هذا المسار المرجعي المعرّفات المكتشفة ويسجل القرار للمراجعة."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-2"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+      - framework: NCA_ECC_2_2024
+        control_id: "2-7"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: verified
+    requires_legal_review: true
+    obligation:
+      scope: personal_data
+      strategy: last_four
+      confidence_level: inferred
+      requires_legal_review: true
+
+  - id: NDMO-PUBLIC-ALLOW
+    priority: 900
+    decision: ALLOW
+    framework: NDMO
+    citation:
+      article: "Section 4.3 — Data Classification Levels"
+      quote: "Data shall be classified as ‘Public’, if unauthorized access to or disclosure of such data or its content has no impact on: National Interest, or Organizations, or Individuals, or Environment."
+      source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
+    condition:
+      classification: Public
+    rationale_en: "The document is classified Public by the available data. Permit the requested retrieval while retaining an auditable decision record."
+    rationale_ar: "يصنّف المستند علنياً وفق البيانات المتاحة. يُسمح بالاسترجاع المطلوب مع الاحتفاظ بسجل قرار قابل للتدقيق."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-12"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 5
+    confidence_level: verified
+    requires_legal_review: true

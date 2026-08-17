@@ -1,0 +1,17 @@
+version: "0.1"
+rules:
+  - id: INVALID-MISSING-CONFIDENCE
+    priority: 1
+    decision: ALLOW
+    framework: PDPL
+    citation:
+      article: Article 1
+      quote: Verbatim source text.
+      source_url: https://example.test/source
+    condition:
+      always: true
+    rationale_en: English rationale.
+    rationale_ar: مبرر عربي.
+    mapped_controls: []
+    sama_maturity_contribution: 3
+    requires_legal_review: true
