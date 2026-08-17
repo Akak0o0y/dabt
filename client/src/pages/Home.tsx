@@ -40,7 +40,7 @@ const classificationStyle: Record<string, string> = {
 };
 
 export default function Home() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
   const trpcUtils = trpc.useUtils();
   const [document, setDocument] = useState(SAMPLE_DOCUMENT);
   const [crossBorder, setCrossBorder] = useState(true);
@@ -48,6 +48,9 @@ export default function Home() {
   const [result, setResult] = useState<DabtResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
+  const [reviewDisposition, setReviewDisposition] = useState<"approved" | "rejected">("approved");
+  const [reviewRationaleEn, setReviewRationaleEn] = useState("");
+  const [reviewRationaleAr, setReviewRationaleAr] = useState("");
 
   const evaluate = trpc.dabt.evaluate.useMutation({
     onSuccess: data => setResult(data as DabtResult),
@@ -66,6 +69,17 @@ export default function Home() {
     { id: selectedSnapshotId ?? "" },
     { enabled: Boolean(selectedSnapshotId) },
   );
+  const evidenceReview = trpc.dabt.evidenceReviewGet.useQuery(
+    { evidenceSnapshotId: selectedSnapshotId ?? "" },
+    { enabled: Boolean(selectedSnapshotId) && isAuthenticated },
+  );
+  const reviewEvidence = trpc.dabt.reviewEvidence.useMutation({
+    onSuccess: async () => {
+      await evidenceReview.refetch();
+      setReviewRationaleEn("");
+      setReviewRationaleAr("");
+    },
+  });
 
   const outcomeHint = useMemo(() => {
     if (!result) return "Run the gate to produce a traceable retrieval decision.";
@@ -121,6 +135,17 @@ export default function Home() {
       return null;
     }
   }, [selectedEvidence.data]);
+  const selectedSnapshotRequiresReview = selectedEvidence.data?.decision === "REVIEW";
+  const isReviewer = user?.role === "admin";
+  const submitReview = () => {
+    if (!selectedSnapshotId) return;
+    reviewEvidence.mutate({
+      evidenceSnapshotId: selectedSnapshotId,
+      disposition: reviewDisposition,
+      rationaleEn: reviewRationaleEn,
+      rationaleAr: reviewRationaleAr,
+    });
+  };
 
   return (
     <main className="blueprint-shell">
@@ -252,6 +277,27 @@ export default function Home() {
         {replayedEvidence ? <div className="snapshot-replay">
           <p className="eyebrow">REPLAYED SNAPSHOT / IMMUTABLE RECORD</p>
           <AuditLog audit={replayedEvidence.audit} classificationEvidence={replayedEvidence.classificationEvidence} />
+          {selectedSnapshotRequiresReview ? <div className="review-control-plane">
+            <div className="review-heading"><div><p className="eyebrow">REVIEW CONTROL / HUMAN DECISION</p><h3>Reviewer disposition</h3></div><ShieldCheck size={18} /></div>
+            {evidenceReview.data ? <div className="sealed-review">
+              <strong>{evidenceReview.data.disposition === "approved" ? "APPROVED AFTER REVIEW" : "REJECTED AFTER REVIEW"}</strong>
+              <p>{evidenceReview.data.rationaleEn}</p>
+              <p className="arabic-rationale" dir="rtl">{evidenceReview.data.rationaleAr}</p>
+              <span>SEALED INTEGRITY HASH · {evidenceReview.data.integrityHash.slice(0, 16)}…</span>
+            </div> : isReviewer ? <div className="review-form">
+              <p>A qualified reviewer must record a bilingual rationale. The decision will be immutable and bound to this snapshot’s integrity hash.</p>
+              <select value={reviewDisposition} onChange={event => setReviewDisposition(event.target.value as "approved" | "rejected")} aria-label="Reviewer disposition">
+                <option value="approved">APPROVE WITH DOCUMENTED RATIONALE</option>
+                <option value="rejected">REJECT WITH DOCUMENTED RATIONALE</option>
+              </select>
+              <textarea value={reviewRationaleEn} onChange={event => setReviewRationaleEn(event.target.value)} placeholder="English review rationale (minimum 20 characters)" />
+              <textarea dir="rtl" value={reviewRationaleAr} onChange={event => setReviewRationaleAr(event.target.value)} placeholder="سبب المراجعة باللغة العربية (12 حرفاً على الأقل)" />
+              <Button onClick={submitReview} disabled={reviewEvidence.isPending || reviewRationaleEn.trim().length < 20 || reviewRationaleAr.trim().length < 12}>
+                {reviewEvidence.isPending ? "SEALING REVIEW…" : "SEAL REVIEW DECISION"}
+              </Button>
+              {reviewEvidence.error ? <p className="review-error">{reviewEvidence.error.message}</p> : null}
+            </div> : <p className="review-pending">This REVIEW snapshot awaits a qualified administrator’s documented decision. No payload is released by this record.</p>}
+          </div> : null}
         </div> : null}
       </section>
 

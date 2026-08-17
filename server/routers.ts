@@ -2,9 +2,10 @@ import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { evaluateDabt, getDabtComplianceMap } from "./dabt";
 import { getAuditEvidence, listAuditEvidence, persistAuditEvidence } from "./evidence";
+import { approveAuditEvidence, getEvidenceReview } from "./review";
 
 const dabtEvaluationInput = z.object({
   document: z.string().min(1).max(100_000),
@@ -48,6 +49,17 @@ export const appRouter = router({
     evidenceGet: protectedProcedure
       .input(z.object({ id: z.string().min(1).max(64) }))
       .query(({ ctx, input }) => getAuditEvidence(ctx.user.id, input.id)),
+    evidenceReviewGet: protectedProcedure
+      .input(z.object({ evidenceSnapshotId: z.string().min(1).max(64) }))
+      .query(({ ctx, input }) => getEvidenceReview(ctx.user.id, input.evidenceSnapshotId)),
+    reviewEvidence: adminProcedure
+      .input(z.object({
+        evidenceSnapshotId: z.string().min(1).max(64),
+        disposition: z.enum(["approved", "rejected"]),
+        rationaleEn: z.string().min(20).max(4_000),
+        rationaleAr: z.string().min(12).max(4_000),
+      }))
+      .mutation(({ ctx, input }) => approveAuditEvidence({ ...input, reviewerUserId: ctx.user.id })),
     complianceMap: publicProcedure.query(() => getDabtComplianceMap()),
   }),
 

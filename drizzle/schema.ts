@@ -1,4 +1,4 @@
-import { index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { index, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -52,3 +52,29 @@ export const auditEvidenceSnapshots = mysqlTable(
 
 export type AuditEvidenceSnapshot = typeof auditEvidenceSnapshots.$inferSelect;
 export type InsertAuditEvidenceSnapshot = typeof auditEvidenceSnapshots.$inferInsert;
+
+/**
+ * Immutable reviewer decision bound to a REVIEW snapshot's integrity hash.
+ * A snapshot receives at most one final reviewer decision; it is never rewritten.
+ */
+export const auditEvidenceReviews = mysqlTable(
+  "auditEvidenceReviews",
+  {
+    id: varchar("id", { length: 64 }).primaryKey(),
+    evidenceSnapshotId: varchar("evidenceSnapshotId", { length: 64 }).notNull().references(() => auditEvidenceSnapshots.id),
+    evidenceIntegrityHash: varchar("evidenceIntegrityHash", { length: 64 }).notNull(),
+    reviewerUserId: int("reviewerUserId").notNull().references(() => users.id),
+    disposition: mysqlEnum("disposition", ["approved", "rejected"]).notNull(),
+    rationaleEn: text("rationaleEn").notNull(),
+    rationaleAr: text("rationaleAr").notNull(),
+    integrityHash: varchar("integrityHash", { length: 64 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    uniqueIndex("auditEvidenceReviews_snapshot_unique").on(table.evidenceSnapshotId),
+    index("auditEvidenceReviews_reviewer_created_idx").on(table.reviewerUserId, table.createdAt),
+  ],
+);
+
+export type AuditEvidenceReview = typeof auditEvidenceReviews.$inferSelect;
+export type InsertAuditEvidenceReview = typeof auditEvidenceReviews.$inferInsert;

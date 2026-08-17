@@ -122,3 +122,8 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Let an owner select a persisted snapshot and replay its stored bilingual audit record and classification evidence through `evidenceGet`
 - [x] Add regression coverage proving a persisted snapshot can be retrieved as a full evidence record, not only listed as metadata
 - [x] Commit and push the durable evidence and Python bytecode cleanup update to GitHub
+- [x] Directly verify that the evidence snapshot schema and database write path cannot retain source or release payload text
+- [ ] Test an authenticated persisted snapshot end to end when a signed-in session is available, and report only observed results
+- [x] Add reviewer approval for REVIEW snapshots with reviewer identity, timestamp, bilingual rationale, and immutable approval evidence
+- [ ] Synchronize the reviewer-approval milestone to GitHub immediately after verification
+- [x] Scope reviewer-decision retrieval to the snapshot owner before displaying review status in the Evidence Vault
