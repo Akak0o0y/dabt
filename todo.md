@@ -114,3 +114,4 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Render explicit BLOCKED and AWAITING HUMAN REVIEW release states in the UI without exposing the source payload
 - [x] Expose the selected NDMO classification mapping’s confidence and cited rationale in the policy result and demo UI
 - [x] Make classification-evidence rendering resilient to a stale API response and restart the local FastAPI process before live verification
+- [ ] Commit and push the completed classification-inference and protected-release hardening updates to GitHub
