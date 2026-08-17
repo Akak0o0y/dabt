@@ -1,5 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_core/trpc";
@@ -56,10 +57,25 @@ export const appRouter = router({
       .input(z.object({
         evidenceSnapshotId: z.string().min(1).max(64),
         disposition: z.enum(["approved", "rejected"]),
+        approvedClassification: z.enum(["Public", "Confidential", "Secret", "Top Secret"]).nullable(),
         rationaleEn: z.string().min(20).max(4_000),
         rationaleAr: z.string().min(12).max(4_000),
+      }).superRefine((input, context) => {
+        if (input.disposition === "approved" && !input.approvedClassification) {
+          context.addIssue({ code: "custom", message: "An approved decision requires a reviewer-approved classification." });
+        }
       }))
-      .mutation(({ ctx, input }) => approveAuditEvidence({ ...input, reviewerUserId: ctx.user.id })),
+      .mutation(async ({ ctx, input }) => {
+        try {
+          return await approveAuditEvidence({ ...input, reviewerUserId: ctx.user.id });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Reviewer approval could not be recorded.";
+          if (message.includes("already has an immutable reviewer decision")) {
+            throw new TRPCError({ code: "CONFLICT", message });
+          }
+          throw error;
+        }
+      }),
     complianceMap: publicProcedure.query(() => getDabtComplianceMap()),
   }),
 

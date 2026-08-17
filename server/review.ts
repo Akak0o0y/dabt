@@ -11,6 +11,7 @@ type BuildEvidenceReviewInput = {
   evidenceIntegrityHash: string;
   reviewerUserId: number;
   disposition: ReviewDisposition;
+  approvedClassification: string | null;
   rationaleEn: string;
   rationaleAr: string;
   createdAt: Date;
@@ -28,6 +29,7 @@ export function buildEvidenceReview(input: BuildEvidenceReviewInput): InsertAudi
     evidenceIntegrityHash: input.evidenceIntegrityHash,
     reviewerUserId: input.reviewerUserId,
     disposition: input.disposition,
+    approvedClassification: input.approvedClassification,
     rationaleEn: input.rationaleEn,
     rationaleAr: input.rationaleAr,
     createdAt: input.createdAt.toISOString(),
@@ -38,6 +40,7 @@ export function buildEvidenceReview(input: BuildEvidenceReviewInput): InsertAudi
     evidenceIntegrityHash: input.evidenceIntegrityHash,
     reviewerUserId: input.reviewerUserId,
     disposition: input.disposition,
+    approvedClassification: input.approvedClassification,
     rationaleEn: input.rationaleEn,
     rationaleAr: input.rationaleAr,
     integrityHash,

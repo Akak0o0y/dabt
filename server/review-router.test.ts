@@ -35,6 +35,7 @@ describe("reviewer approval tRPC procedure", () => {
     const result = await caller.dabt.reviewEvidence({
       evidenceSnapshotId: "evidence_001",
       disposition: "approved",
+      approvedClassification: "Confidential",
       rationaleEn: "The documented minimisation controls and residual risk have been reviewed.",
       rationaleAr: "تمت مراجعة ضوابط تقليل البيانات والمخاطر المتبقية الموثقة.",
     });
@@ -45,6 +46,12 @@ describe("reviewer approval tRPC procedure", () => {
   it("forbids non-admin approval attempts", async () => {
     const caller = appRouter.createCaller(standardContext());
     await expect(caller.dabt.reviewEvidence({ evidenceSnapshotId: "evidence_001", disposition: "approved", rationaleEn: "A sufficiently detailed review rationale.", rationaleAr: "سبب مراجعة مفصل وكافٍ لهذا القرار." })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("returns CONFLICT when a reviewer attempts to rewrite an immutable decision", async () => {
+    approveAuditEvidence.mockRejectedValueOnce(new Error("This REVIEW snapshot already has an immutable reviewer decision."));
+    const caller = appRouter.createCaller(adminContext());
+    await expect(caller.dabt.reviewEvidence({ evidenceSnapshotId: "evidence_001", disposition: "approved", approvedClassification: "Confidential", rationaleEn: "A sufficiently detailed immutable review rationale.", rationaleAr: "سبب مراجعة مفصل وكافٍ لضمان عدم قابلية تعديل القرار." })).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("retrieves review evidence only through the requesting snapshot owner scope", async () => {

@@ -65,6 +65,7 @@ export const auditEvidenceReviews = mysqlTable(
     evidenceIntegrityHash: varchar("evidenceIntegrityHash", { length: 64 }).notNull(),
     reviewerUserId: int("reviewerUserId").notNull().references(() => users.id),
     disposition: mysqlEnum("disposition", ["approved", "rejected"]).notNull(),
+    approvedClassification: varchar("approvedClassification", { length: 32 }),
     rationaleEn: text("rationaleEn").notNull(),
     rationaleAr: text("rationaleAr").notNull(),
     integrityHash: varchar("integrityHash", { length: 64 }).notNull(),

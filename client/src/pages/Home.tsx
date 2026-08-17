@@ -10,6 +10,7 @@ import { startLogin } from "@/const";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { getReleaseState } from "@/lib/releaseState";
+import { buildClassificationComparison } from "@/lib/classificationCompare";
 
 type DabtResult = {
   decision: string;
@@ -49,6 +50,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
   const [reviewDisposition, setReviewDisposition] = useState<"approved" | "rejected">("approved");
+  const [approvedClassification, setApprovedClassification] = useState<"Public" | "Confidential" | "Secret" | "Top Secret">("Secret");
   const [reviewRationaleEn, setReviewRationaleEn] = useState("");
   const [reviewRationaleAr, setReviewRationaleAr] = useState("");
 
@@ -137,11 +139,19 @@ export default function Home() {
   }, [selectedEvidence.data]);
   const selectedSnapshotRequiresReview = selectedEvidence.data?.decision === "REVIEW";
   const isReviewer = user?.role === "admin";
+  const classificationComparison = replayedEvidence && selectedEvidence.data ? buildClassificationComparison({
+    inferredClassification: selectedEvidence.data.classification,
+    confidenceLevel: replayedEvidence.classificationEvidence.confidence_level,
+    requiresLegalReview: replayedEvidence.classificationEvidence.requires_legal_review,
+    reviewerDisposition: evidenceReview.data?.disposition ?? null,
+    approvedClassification: evidenceReview.data?.approvedClassification ?? null,
+  }) : null;
   const submitReview = () => {
     if (!selectedSnapshotId) return;
     reviewEvidence.mutate({
       evidenceSnapshotId: selectedSnapshotId,
       disposition: reviewDisposition,
+      approvedClassification: reviewDisposition === "approved" ? approvedClassification : null,
       rationaleEn: reviewRationaleEn,
       rationaleAr: reviewRationaleAr,
     });
@@ -277,12 +287,21 @@ export default function Home() {
         {replayedEvidence ? <div className="snapshot-replay">
           <p className="eyebrow">REPLAYED SNAPSHOT / IMMUTABLE RECORD</p>
           <AuditLog audit={replayedEvidence.audit} classificationEvidence={replayedEvidence.classificationEvidence} />
+          {classificationComparison ? <section className="classification-comparison" aria-label="Classification comparison">
+            <div className="comparison-heading"><div><p className="eyebrow">CLASSIFICATION RECONCILIATION / NON-AUTHORITATIVE</p><h3>{classificationComparison.status === "changed" ? "Reviewer level differs from policy inference" : classificationComparison.status === "confirmed" ? "Reviewer level confirms policy inference" : "Awaiting qualified reviewer classification"}</h3></div><Layers3 size={18} /></div>
+            <div className="comparison-grid">
+              <div><span>{classificationComparison.inferred.label}</span><strong>{classificationComparison.inferred.value}</strong><small>{replayedEvidence.classificationEvidence.mapping_key ?? "No mapping key"}</small></div>
+              <div><span>{classificationComparison.approved.label}</span><strong>{classificationComparison.approved.value}</strong><small>{evidenceReview.data?.disposition === "approved" ? "Bound to immutable reviewer evidence" : "No final reviewer classification recorded"}</small></div>
+            </div>
+            <p>{classificationComparison.caveat}</p>
+          </section> : null}
           {selectedSnapshotRequiresReview ? <div className="review-control-plane">
             <div className="review-heading"><div><p className="eyebrow">REVIEW CONTROL / HUMAN DECISION</p><h3>Reviewer disposition</h3></div><ShieldCheck size={18} /></div>
             {evidenceReview.data ? <div className="sealed-review">
               <strong>{evidenceReview.data.disposition === "approved" ? "APPROVED AFTER REVIEW" : "REJECTED AFTER REVIEW"}</strong>
               <p>{evidenceReview.data.rationaleEn}</p>
               <p className="arabic-rationale" dir="rtl">{evidenceReview.data.rationaleAr}</p>
+              {evidenceReview.data.approvedClassification ? <span>QUALIFIED-REVIEWER CLASSIFICATION · {evidenceReview.data.approvedClassification}</span> : null}
               <span>SEALED INTEGRITY HASH · {evidenceReview.data.integrityHash.slice(0, 16)}…</span>
             </div> : isReviewer ? <div className="review-form">
               <p>A qualified reviewer must record a bilingual rationale. The decision will be immutable and bound to this snapshot’s integrity hash.</p>
@@ -290,6 +309,9 @@ export default function Home() {
                 <option value="approved">APPROVE WITH DOCUMENTED RATIONALE</option>
                 <option value="rejected">REJECT WITH DOCUMENTED RATIONALE</option>
               </select>
+              {reviewDisposition === "approved" ? <select value={approvedClassification} onChange={event => setApprovedClassification(event.target.value as "Public" | "Confidential" | "Secret" | "Top Secret")} aria-label="Reviewer-approved classification">
+                <option value="Public">PUBLIC</option><option value="Confidential">CONFIDENTIAL</option><option value="Secret">SECRET</option><option value="Top Secret">TOP SECRET</option>
+              </select> : null}
               <textarea value={reviewRationaleEn} onChange={event => setReviewRationaleEn(event.target.value)} placeholder="English review rationale (minimum 20 characters)" />
               <textarea dir="rtl" value={reviewRationaleAr} onChange={event => setReviewRationaleAr(event.target.value)} placeholder="سبب المراجعة باللغة العربية (12 حرفاً على الأقل)" />
               <Button onClick={submitReview} disabled={reviewEvidence.isPending || reviewRationaleEn.trim().length < 20 || reviewRationaleAr.trim().length < 12}>

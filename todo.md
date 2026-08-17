@@ -123,7 +123,13 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Add regression coverage proving a persisted snapshot can be retrieved as a full evidence record, not only listed as metadata
 - [x] Commit and push the durable evidence and Python bytecode cleanup update to GitHub
 - [x] Directly verify that the evidence snapshot schema and database write path cannot retain source or release payload text
-- [ ] Test an authenticated persisted snapshot end to end when a signed-in session is available, and report only observed results
+- [x] Test an authenticated persisted snapshot end to end when a signed-in session is available, and report only observed results
 - [x] Add reviewer approval for REVIEW snapshots with reviewer identity, timestamp, bilingual rationale, and immutable approval evidence
 - [x] Synchronize the reviewer-approval milestone to GitHub immediately after verification
 - [x] Scope reviewer-decision retrieval to the snapshot owner before displaying review status in the Evidence Vault
+- [x] Run the authenticated health-data retrieval and directly inspect persisted UI and tRPC fields for source/release payload absence
+- [x] Exercise immutable reviewer approval on a real REVIEW snapshot and verify a second write is rejected
+- [x] Build a comparison view that distinguishes inferred classification from an approved reviewer disposition without presenting either mapping as authoritative
+- [x] Record an optional qualified-reviewer-approved NDMO classification with every immutable approval, while retaining the legal-review caveat
+- [x] Return a tRPC CONFLICT response, rather than an internal-error response, when an immutable reviewer decision is resubmitted
+- [ ] Push the classification compare-view milestone as a discrete GitHub commit
