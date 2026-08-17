@@ -132,4 +132,4 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Build a comparison view that distinguishes inferred classification from an approved reviewer disposition without presenting either mapping as authoritative
 - [x] Record an optional qualified-reviewer-approved NDMO classification with every immutable approval, while retaining the legal-review caveat
 - [x] Return a tRPC CONFLICT response, rather than an internal-error response, when an immutable reviewer decision is resubmitted
-- [ ] Push the classification compare-view milestone as a discrete GitHub commit
+- [x] Push the classification compare-view milestone as a discrete GitHub commit
