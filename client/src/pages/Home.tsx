@@ -1,16 +1,19 @@
 import { useMemo, useState } from "react";
-import { Braces, Copy, FileText, Globe2, Layers3, Play, RotateCcw, ShieldCheck, TriangleAlert } from "lucide-react";
-import { AuditLog, type DabtAudit } from "@/components/AuditLog";
+import { Ban, Braces, Copy, Eye, FileText, Globe2, Layers3, Play, RotateCcw, ShieldCheck, TriangleAlert } from "lucide-react";
+import { AuditLog, type ClassificationEvidence, type DabtAudit } from "@/components/AuditLog";
+import { ConfidenceFlag } from "@/components/ConfidenceFlag";
 import { DecisionBadge } from "@/components/DecisionBadge";
 import { FindingsPanel, type DabtFinding } from "@/components/FindingsPanel";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
+import { getReleaseState } from "@/lib/releaseState";
 
 type DabtResult = {
   decision: string;
   decision_rule_id: string | null;
   classification: string;
+  classification_evidence: ClassificationEvidence;
   findings: DabtFinding[];
   redacted_document: string;
   audit: DabtAudit;
@@ -71,6 +74,16 @@ export default function Home() {
     await navigator.clipboard.writeText(result.redacted_document);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
+  };
+
+  const releaseState = result ? getReleaseState(result.decision, result.redacted_document) : null;
+  const classificationEvidence = result?.classification_evidence ?? {
+    mapping_key: null,
+    confidence_level: "needs_verification",
+    requires_legal_review: true,
+    rationale_en: "Classification evidence was unavailable from this API response; do not rely on the displayed classification until the policy service is refreshed.",
+    rationale_ar: "تعذر الحصول على دليل التصنيف من استجابة واجهة البرمجة؛ لا ينبغي الاعتماد على التصنيف المعروض حتى يتم تحديث خدمة السياسة.",
+    citation: null,
   };
 
   return (
@@ -144,7 +157,11 @@ export default function Home() {
           <p className="outcome-hint">{outcomeHint}</p>
           <div className="classification-block">
             <span>NDMO CLASSIFICATION</span>
-            <strong className={result ? classificationStyle[result.classification] : "classification-empty"}>{result?.classification ?? "—"}</strong>
+            <div className="classification-badge-row">
+              <strong className={result ? classificationStyle[result.classification] : "classification-empty"}>{result?.classification ?? "—"}</strong>
+              {result ? <ConfidenceFlag level={classificationEvidence.confidence_level} /> : null}
+            </div>
+            {result && classificationEvidence.mapping_key ? <span className="classification-source">{classificationEvidence.mapping_key}</span> : null}
           </div>
           <div className="outcome-dimensions"><span>POLICY MAP</span><i /><span>{result?.audit.decision_rule_id ?? "NO DECISION"}</span></div>
         </section>
@@ -155,14 +172,20 @@ export default function Home() {
         <section className="blueprint-panel redaction-panel">
           <div className="panel-heading">
             <div><p className="eyebrow">03 / TRANSFORMED OUTPUT</p><h2>Release payload</h2></div>
-            {result ? <button className="copy-button" onClick={copyRedacted}><Copy size={15} /> {copied ? "COPIED" : "COPY"}</button> : null}
+            {result && releaseState?.renderPayload ? <button className="copy-button" onClick={copyRedacted}><Copy size={15} /> {copied ? "COPIED" : "COPY"}</button> : null}
           </div>
-          <div className="redacted-document">{result?.redacted_document ?? "Evaluated content will appear here after the gate resolves its obligations."}</div>
+          {result && releaseState && !releaseState.renderPayload ? (
+            <div className={`release-state release-${releaseState.kind}`}>
+              {releaseState.kind === "blocked" ? <Ban size={25} /> : <Eye size={25} />}
+              <strong>{releaseState.label}</strong>
+              <span lang="ar" dir="rtl">{releaseState.kind === "blocked" ? "محظور — لا يتم الإفراج عن أي حمولة بموجب هذا القرار" : "بانتظار المراجعة البشرية — لا يتم الإفراج عن أي حمولة"}</span>
+            </div>
+          ) : <div className="redacted-document">{result?.redacted_document ?? "Evaluated content will appear here after the gate resolves its obligations."}</div>}
           <div className="redaction-note"><span>▣</span> Redaction is an Article 15(5) and Article 29(2)(c) compliance path — not an authority determination.</div>
         </section>
       </section>
 
-      {result ? <AuditLog audit={result.audit} /> : <section className="blueprint-panel audit-panel empty-audit"><p className="eyebrow">04 / EVIDENCE REGISTER</p><h2>Awaiting a policy decision</h2><p>The bilingual record will expose every fired rule, subdomain mapping, confidence status, and the mandatory legal-review caveat.</p></section>}
+      {result ? <AuditLog audit={result.audit} classificationEvidence={classificationEvidence} /> : <section className="blueprint-panel audit-panel empty-audit"><p className="eyebrow">04 / EVIDENCE REGISTER</p><h2>Awaiting a policy decision</h2><p>The bilingual record will expose every fired rule, subdomain mapping, confidence status, and the mandatory legal-review caveat.</p></section>}
 
       <footer className="app-footer">
         <span>RESEARCH-GROUNDED COMPLIANCE MAP</span><i /><span>ALL MAPPINGS REQUIRE QUALIFIED LEGAL REVIEW</span><span lang="ar" dir="rtl">كل التعيينات تتطلب مراجعة قانونية مؤهلة</span>

@@ -38,3 +38,11 @@ button:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2p
 /* Keep the compliance-control strip in the normal flow so it cannot cover the hero description. */
 .hero-controls { position: relative; z-index: 1; left: auto; bottom: auto; margin-top: 1.2rem; }
 @media (max-width: 920px) { .hero-frame { padding-bottom: 2.2rem; } .hero-controls { left: auto; } }
+
+.classification-badge-row { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+.classification-source { margin-top:.35rem; color:#93c4ef; font:.52rem "DM Mono"; letter-spacing:.04em; word-break:break-all; }
+.release-state { display:grid; place-items:center; align-content:center; gap:.65rem; min-height:162px; padding:1rem; border:1px solid currentColor; text-align:center; font:.72rem/1.55 "DM Mono"; letter-spacing:.03em; }
+.release-state strong { font-size:.78rem; }.release-state span { color:currentColor; font-family:"IBM Plex Sans Arabic",sans-serif; letter-spacing:0; }
+.release-blocked { color:#ffb0aa; background:rgba(123,31,35,.19); }.release-awaiting_review { color:#ffdc9e; background:rgba(111,78,17,.19); }
+.classification-evidence-register { margin-top:1rem; padding:.8rem; border:1px dashed rgba(255,204,129,.68); background:rgba(83,62,23,.2); }
+.classification-evidence-register p { margin:.35rem 0; color:#d6e6f8; font-size:.7rem; line-height:1.55; }.classification-evidence-register .arabic-rationale { color:#c5ddf4; font-family:"IBM Plex Sans Arabic",sans-serif; }.classification-evidence-register blockquote { margin:.65rem 0 0; padding:.6rem .7rem; border-left:2px solid #ffcf85; color:#ffe1ad; font:.62rem/1.55 "DM Mono"; }

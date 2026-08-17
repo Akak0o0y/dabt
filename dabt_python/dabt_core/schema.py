@@ -75,15 +75,23 @@ class ClassificationPolicy:
     sector_defaults: tuple[ClassificationMapping, ...] = ()
 
     def finding_level_for(self, key: str) -> NdmoLevel | None:
+        mapping = self.finding_mapping_for(key)
+        return mapping.level if mapping else None
+
+    def finding_mapping_for(self, key: str) -> ClassificationMapping | None:
         for mapping in self.finding_levels:
             if mapping.key == key:
-                return mapping.level
+                return mapping
         return None
 
     def sector_default_for(self, sector: str) -> NdmoLevel | None:
+        mapping = self.sector_default_mapping_for(sector)
+        return mapping.level if mapping else None
+
+    def sector_default_mapping_for(self, sector: str) -> ClassificationMapping | None:
         for mapping in self.sector_defaults:
             if mapping.key.casefold() == sector.casefold():
-                return mapping.level
+                return mapping
         return None
 
     def with_finding_level(self, key: str, level: str) -> "ClassificationPolicy":

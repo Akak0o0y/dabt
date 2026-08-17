@@ -111,3 +111,6 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Commit the verified Dabt Core v0.1 implementation and push it to the configured GitHub repository
 - [x] Independently verify and provide the requested National ID detector and compliance-map source files
 - [x] Add cited English and Arabic rationale to each inferred PDPL Sensitive Data → NDMO Secret classification mapping, and enforce those fields at map-load time
+- [x] Render explicit BLOCKED and AWAITING HUMAN REVIEW release states in the UI without exposing the source payload
+- [x] Expose the selected NDMO classification mapping’s confidence and cited rationale in the policy result and demo UI
+- [x] Make classification-evidence rendering resilient to a stale API response and restart the local FastAPI process before live verification

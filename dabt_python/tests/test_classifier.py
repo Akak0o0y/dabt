@@ -79,3 +79,25 @@ def test_classifier_uses_validated_compliance_map_configuration() -> None:
         [finding("saudi_national_id")], ClassificationContext(), overridden_policy
     )
     assert overridden.level == NdmoLevel.TOP_SECRET
+
+
+def test_inferred_sensitive_classification_exposes_selected_mapping_evidence() -> None:
+    compliance_map = load_compliance_map(MAP_PATH)
+    health_finding = Finding(
+        "sensitive_data",
+        "medical",
+        "medical",
+        0,
+        7,
+        "format_detected",
+        "inferred",
+        True,
+        "health",
+    )
+    result = classify_findings([health_finding], ClassificationContext(), compliance_map.classification)
+    assert result.level == NdmoLevel.SECRET
+    assert result.confidence_level.value == "inferred"
+    assert result.selected_mapping is not None
+    assert result.selected_mapping.key == "sensitive_data.health"
+    assert result.selected_mapping.citation is not None
+    assert "Principle 2" in result.selected_mapping.citation.article

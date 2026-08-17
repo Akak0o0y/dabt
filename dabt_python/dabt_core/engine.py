@@ -39,6 +39,7 @@ class EngineResult:
     decision: Decision
     decision_rule_id: str | None
     classification: str
+    classification_evidence: dict[str, object]
     findings: tuple[Finding, ...]
     fired_rules: tuple[Rule, ...]
     obligations: tuple[RedactionObligation, ...]
@@ -50,6 +51,7 @@ class EngineResult:
             "decision": str(self.decision),
             "decision_rule_id": self.decision_rule_id,
             "classification": self.classification,
+            "classification_evidence": self.classification_evidence,
             "findings": [
                 {
                     "type": item.type,
@@ -161,11 +163,29 @@ class PolicyEngine:
 
         stage("audit_logging")
         audit = build_audit_record(request, classification.level.value, policy, obligations, timestamp)
+        selected_mapping = classification.selected_mapping
+        classification_evidence: dict[str, object] = {
+            "mapping_key": selected_mapping.key if selected_mapping else None,
+            "confidence_level": str(classification.confidence_level),
+            "requires_legal_review": selected_mapping.requires_legal_review if selected_mapping else True,
+            "rationale_en": selected_mapping.rationale_en if selected_mapping else classification.rationale_en,
+            "rationale_ar": selected_mapping.rationale_ar if selected_mapping else classification.rationale_ar,
+            "citation": (
+                {
+                    "article": selected_mapping.citation.article,
+                    "quote": selected_mapping.citation.quote,
+                    "source_url": selected_mapping.citation.source_url,
+                }
+                if selected_mapping and selected_mapping.citation
+                else None
+            ),
+        }
 
         return EngineResult(
             decision=policy.decision,
             decision_rule_id=policy.rule.id if policy.rule else None,
             classification=classification.level.value,
+            classification_evidence=classification_evidence,
             findings=findings,
             fired_rules=policy.fired_rules,
             obligations=obligations,

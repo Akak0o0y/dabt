@@ -75,3 +75,16 @@ def test_engine_makes_no_network_calls(monkeypatch: pytest.MonkeyPatch) -> None:
         EngineRequest(document="public"), "2026-08-17T00:00:00Z"
     )
     assert result.decision == Decision.ALLOW
+
+
+def test_engine_serialises_selected_classification_confidence_and_evidence() -> None:
+    health = Finding(
+        "sensitive_data", "medical", "medical", 0, 7, "format_detected", "inferred", True, "health"
+    )
+    result = PolicyEngine(load_compliance_map(MAP_PATH), (StaticDetector([health]),)).evaluate(
+        EngineRequest(document="medical", lawful_basis="consent"), "2026-08-17T00:00:00Z"
+    ).to_dict()
+    evidence = result["classification_evidence"]
+    assert evidence["confidence_level"] == "inferred"
+    assert evidence["mapping_key"] == "sensitive_data.health"
+    assert evidence["citation"]["article"].endswith("Principle 2: Classification Based on Necessity")

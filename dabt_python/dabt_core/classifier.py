@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .detectors.base import Finding
-from .schema import ClassificationPolicy, NdmoLevel
+from .schema import ClassificationMapping, ClassificationPolicy, ConfidenceLevel, NdmoLevel
 
 
 _RANK = {
@@ -36,6 +36,8 @@ class ClassificationResult:
     contributing_levels: tuple[NdmoLevel, ...]
     rationale_en: str
     rationale_ar: str
+    confidence_level: ConfidenceLevel
+    selected_mapping: ClassificationMapping | None
 
 
 def _canonical_level(value: str) -> NdmoLevel:
@@ -62,14 +64,27 @@ def _sector_default(context: ClassificationContext, policy: ClassificationPolicy
     return NdmoLevel.TOP_SECRET if context.sector.casefold() in {"security", "political"} else NdmoLevel.PUBLIC
 
 
-def _finding_level(finding: Finding, policy: ClassificationPolicy | None) -> NdmoLevel:
+def _sector_mapping(context: ClassificationContext, policy: ClassificationPolicy | None) -> ClassificationMapping | None:
+    if context.default_level or not policy:
+        return None
+    return policy.sector_default_mapping_for(context.sector)
+
+
+def _finding_mapping(finding: Finding, policy: ClassificationPolicy | None) -> ClassificationMapping | None:
     if policy:
         key = f"sensitive_data.{finding.sensitive_category}" if finding.type == "sensitive_data" else finding.type
-        mapped_level = policy.finding_level_for(key)
-        if mapped_level is None and finding.type == "sensitive_data":
-            mapped_level = policy.finding_level_for("sensitive_data.default")
-        if mapped_level is not None:
-            return mapped_level
+        mapped = policy.finding_mapping_for(key)
+        if mapped is None and finding.type == "sensitive_data":
+            mapped = policy.finding_mapping_for("sensitive_data.default")
+        if mapped is not None:
+            return mapped
+    return None
+
+
+def _finding_level(finding: Finding, policy: ClassificationPolicy | None) -> NdmoLevel:
+    mapped = _finding_mapping(finding, policy)
+    if mapped is not None:
+        return mapped.level
     if finding.type in _PII_TYPES:
         return NdmoLevel.CONFIDENTIAL
     if finding.type == "sensitive_data":
@@ -87,17 +102,27 @@ def classify_findings(
     """Apply NDMO Principle 4: aggregated data receives its maximum level."""
     if not findings:
         default = _sector_default(context, policy)
+        default_mapping = _sector_mapping(context, policy)
         return ClassificationResult(
             level=default,
             contributing_levels=(),
             rationale_en=f"No regulated findings detected; applied the {context.sector} sector default.",
             rationale_ar=f"لم تُكتشف نتائج منظمة؛ طُبق الإعداد الافتراضي لقطاع {context.sector}.",
+            confidence_level=default_mapping.confidence_level if default_mapping else ConfidenceLevel.VERIFIED,
+            selected_mapping=default_mapping,
         )
     levels = tuple(_finding_level(finding, policy) for finding in findings)
     level = max(levels, key=lambda item: _RANK[item])
+    mappings = tuple(_finding_mapping(finding, policy) for finding in findings)
+    selected_mapping = next(
+        (mapping for mapping, mapped_level in zip(mappings, levels, strict=True) if mapping and mapped_level == level),
+        None,
+    )
     return ClassificationResult(
         level=level,
         contributing_levels=levels,
         rationale_en="Applied NDMO Principle 4: the highest classification across integrated data governs the result.",
         rationale_ar="طُبق المبدأ الرابع لـ NDMO: أعلى تصنيف بين البيانات المجمعة هو الذي يحكم النتيجة.",
+        confidence_level=selected_mapping.confidence_level if selected_mapping else ConfidenceLevel.VERIFIED,
+        selected_mapping=selected_mapping,
     )

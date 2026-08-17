@@ -1,6 +1,15 @@
 import { FileSearch, Scale } from "lucide-react";
 import { ConfidenceFlag } from "./ConfidenceFlag";
 
+export type ClassificationEvidence = {
+  mapping_key: string | null;
+  confidence_level: string;
+  requires_legal_review: boolean;
+  rationale_en: string;
+  rationale_ar: string;
+  citation: { article: string; quote: string; source_url: string } | null;
+};
+
 export type DabtAudit = {
   decision: string;
   decision_rule_id: string | null;
@@ -25,7 +34,7 @@ export type DabtAudit = {
   }>;
 };
 
-export function AuditLog({ audit }: { audit: DabtAudit }) {
+export function AuditLog({ audit, classificationEvidence }: { audit: DabtAudit; classificationEvidence?: ClassificationEvidence }) {
   return (
     <section className="blueprint-panel audit-panel">
       <div className="panel-heading">
@@ -39,6 +48,18 @@ export function AuditLog({ audit }: { audit: DabtAudit }) {
         <p>{audit.summary_en}</p>
         <p lang="ar" dir="rtl">{audit.summary_ar}</p>
       </div>
+      {classificationEvidence?.mapping_key ? (
+        <div className="classification-evidence-register">
+          <div className="audit-rule-meta">
+            <span className="rule-id">CLASSIFICATION EVIDENCE · {classificationEvidence.mapping_key}</span>
+            <ConfidenceFlag level={classificationEvidence.confidence_level} />
+          </div>
+          <p className="citation-line">{classificationEvidence.citation?.article ?? "Mapping evidence"}</p>
+          <p>{classificationEvidence.rationale_en}</p>
+          <p lang="ar" dir="rtl" className="arabic-rationale">{classificationEvidence.rationale_ar}</p>
+          {classificationEvidence.citation ? <blockquote>{classificationEvidence.citation.quote}</blockquote> : null}
+        </div>
+      ) : null}
       <div className="rule-register">
         {audit.fired_rules.map(rule => (
           <article className="audit-rule" key={rule.id}>
