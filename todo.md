@@ -108,4 +108,4 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Ensure a DENY result never exposes the original payload in the release-output field, with a regression test
 - [x] Add a deploy-compatible Dockerfile that includes the Python runtime needed by the FastAPI service
 - [x] Review all user-facing Arabic copy for correctness and natural phrasing, then document that QA review
-- [ ] Commit the verified Dabt Core v0.1 implementation and push it to the configured GitHub repository
+- [x] Commit the verified Dabt Core v0.1 implementation and push it to the configured GitHub repository
