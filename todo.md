@@ -125,5 +125,5 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Directly verify that the evidence snapshot schema and database write path cannot retain source or release payload text
 - [ ] Test an authenticated persisted snapshot end to end when a signed-in session is available, and report only observed results
 - [x] Add reviewer approval for REVIEW snapshots with reviewer identity, timestamp, bilingual rationale, and immutable approval evidence
-- [ ] Synchronize the reviewer-approval milestone to GitHub immediately after verification
+- [x] Synchronize the reviewer-approval milestone to GitHub immediately after verification
 - [x] Scope reviewer-decision retrieval to the snapshot owner before displaying review status in the Evidence Vault
