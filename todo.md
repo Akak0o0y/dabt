@@ -109,3 +109,5 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Add a deploy-compatible Dockerfile that includes the Python runtime needed by the FastAPI service
 - [x] Review all user-facing Arabic copy for correctness and natural phrasing, then document that QA review
 - [x] Commit the verified Dabt Core v0.1 implementation and push it to the configured GitHub repository
+- [x] Independently verify and provide the requested National ID detector and compliance-map source files
+- [x] Add cited English and Arabic rationale to each inferred PDPL Sensitive Data → NDMO Secret classification mapping, and enforce those fields at map-load time

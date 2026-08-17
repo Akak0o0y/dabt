@@ -26,30 +26,72 @@ classification:
       level: Confidential
       confidence_level: inferred
       requires_legal_review: true
+      rationale_en: "Commercial Registration format detection is an inferred classification because the number alone does not establish the impact of unauthorized disclosure. It is treated as Confidential pending an entity-specific impact assessment under NDMO Principle 2."
+      rationale_ar: "يُعد اكتشاف صيغة رقم السجل التجاري تصنيفاً مستنتجاً لأن الرقم وحده لا يحدد أثر الإفصاح غير المصرح به. ويعامل كمستوى Confidential لحين إجراء تقييم أثر خاص بالجهة وفق مبدأ NDMO الثاني."
+      citation:
+        article: "Section 4.2 — Principle 2: Classification Based on Necessity"
+        quote: "Where data must be classified, the level of classification, and the safeguards and controls associated with the classification level, should be based on the potential adverse impact as a result of unauthorized disclosure, subject to the nature and sensitivity of the data."
+        source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
     sensitive_data.health:
       level: Secret
       confidence_level: inferred
       requires_legal_review: true
+      rationale_en: "NDMO lists an individual's medical file as a Confidential example. This map elevates health-data signals to Secret only as an explicit, conservative inference for an automated retrieval gate: a mixed or aggregated payload may create a medium adverse impact, and Principle 2 requires the level to reflect impact, nature, and sensitivity. A qualified reviewer must validate this elevation for the entity and use case."
+      rationale_ar: "تدرج NDMO ملف الفرد الطبي ضمن أمثلة مستوى Confidential. ويرفع هذا التعيين إشارات البيانات الصحية إلى مستوى Secret بوصفه استنتاجاً تحفظياً صريحاً لبوابة استرجاع آلية فقط: فقد تؤدي حمولة مختلطة أو مجمعة إلى أثر سلبي متوسط، ويلزم المبدأ الثاني أن يعكس المستوى الأثر وطبيعة البيانات وحساسيتها. ويجب على مراجع مؤهل التحقق من هذا الرفع لكل جهة وحالة استخدام."
+      citation:
+        article: "Section 4.2 — Principle 2: Classification Based on Necessity"
+        quote: "Where data must be classified, the level of classification, and the safeguards and controls associated with the classification level, should be based on the potential adverse impact as a result of unauthorized disclosure, subject to the nature and sensitivity of the data."
+        source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
     sensitive_data.biometric:
       level: Secret
       confidence_level: inferred
       requires_legal_review: true
+      rationale_en: "NDMO does not assign a fixed Secret level to biometric data in the cited examples. This map therefore treats the elevation as an explicit inference for automated retrieval, based on the elevated re-identification risk of biometric data and NDMO Principle 2's impact-, nature-, and sensitivity-based assessment. A qualified reviewer must validate the classification."
+      rationale_ar: "لا تعيّن NDMO مستوى Secret ثابتاً للبيانات البيومترية في الأمثلة المشار إليها. لذلك يعامل هذا التعيين الرفع على أنه استنتاج صريح للاسترجاع الآلي، استناداً إلى ارتفاع خطر إعادة التعرف من البيانات البيومترية وإلى التقييم القائم على الأثر وطبيعة البيانات وحساسيتها في مبدأ NDMO الثاني. ويجب على مراجع مؤهل التحقق من التصنيف."
+      citation:
+        article: "Section 4.2 — Principle 2: Classification Based on Necessity"
+        quote: "Where data must be classified, the level of classification, and the safeguards and controls associated with the classification level, should be based on the potential adverse impact as a result of unauthorized disclosure, subject to the nature and sensitivity of the data."
+        source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
     sensitive_data.genetic:
       level: Secret
       confidence_level: inferred
       requires_legal_review: true
+      rationale_en: "NDMO does not assign a fixed Secret level to genetic data in the cited examples. This map therefore treats the elevation as an explicit inference for automated retrieval, based on genetic data's identifying and sensitive nature and NDMO Principle 2's impact-based assessment. A qualified reviewer must validate the classification."
+      rationale_ar: "لا تعيّن NDMO مستوى Secret ثابتاً للبيانات الجينية في الأمثلة المشار إليها. لذلك يعامل هذا التعيين الرفع على أنه استنتاج صريح للاسترجاع الآلي، استناداً إلى الطبيعة التعريفية والحساسة للبيانات الجينية وإلى التقييم القائم على الأثر في مبدأ NDMO الثاني. ويجب على مراجع مؤهل التحقق من التصنيف."
+      citation:
+        article: "Section 4.2 — Principle 2: Classification Based on Necessity"
+        quote: "Where data must be classified, the level of classification, and the safeguards and controls associated with the classification level, should be based on the potential adverse impact as a result of unauthorized disclosure, subject to the nature and sensitivity of the data."
+        source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
     sensitive_data.criminal:
       level: Secret
       confidence_level: inferred
       requires_legal_review: true
+      rationale_en: "NDMO does not assign a fixed Secret level to criminal-conviction data in the cited examples. This map therefore treats the elevation as an explicit inference for automated retrieval, based on the potential adverse impact on an individual and NDMO Principle 2's impact-, nature-, and sensitivity-based assessment. A qualified reviewer must validate the classification."
+      rationale_ar: "لا تعيّن NDMO مستوى Secret ثابتاً لبيانات الإدانات والجرائم في الأمثلة المشار إليها. لذلك يعامل هذا التعيين الرفع على أنه استنتاج صريح للاسترجاع الآلي، استناداً إلى الأثر السلبي المحتمل على الفرد وإلى التقييم القائم على الأثر وطبيعة البيانات وحساسيتها في مبدأ NDMO الثاني. ويجب على مراجع مؤهل التحقق من التصنيف."
+      citation:
+        article: "Section 4.2 — Principle 2: Classification Based on Necessity"
+        quote: "Where data must be classified, the level of classification, and the safeguards and controls associated with the classification level, should be based on the potential adverse impact as a result of unauthorized disclosure, subject to the nature and sensitivity of the data."
+        source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
     sensitive_data.credit:
       level: Secret
       confidence_level: inferred
       requires_legal_review: true
+      rationale_en: "NDMO does not assign a fixed Secret level to credit data in the cited examples. This map therefore treats the elevation as an explicit inference for automated retrieval, based on the potential adverse impact on an individual and NDMO Principle 2's impact-, nature-, and sensitivity-based assessment. A qualified reviewer must validate the classification."
+      rationale_ar: "لا تعيّن NDMO مستوى Secret ثابتاً لبيانات الائتمان في الأمثلة المشار إليها. لذلك يعامل هذا التعيين الرفع على أنه استنتاج صريح للاسترجاع الآلي، استناداً إلى الأثر السلبي المحتمل على الفرد وإلى التقييم القائم على الأثر وطبيعة البيانات وحساسيتها في مبدأ NDMO الثاني. ويجب على مراجع مؤهل التحقق من التصنيف."
+      citation:
+        article: "Section 4.2 — Principle 2: Classification Based on Necessity"
+        quote: "Where data must be classified, the level of classification, and the safeguards and controls associated with the classification level, should be based on the potential adverse impact as a result of unauthorized disclosure, subject to the nature and sensitivity of the data."
+        source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
     sensitive_data.default:
       level: Confidential
       confidence_level: inferred
       requires_legal_review: true
+      rationale_en: "This is the fallback for detected PDPL Sensitive Data without a category-specific mapping. It remains Confidential as the least elevated protected default; NDMO Principle 2 requires a qualified reviewer to assess the actual adverse impact, nature, and sensitivity before any higher classification is relied upon."
+      rationale_ar: "هذا هو المسار الاحتياطي للبيانات الحساسة وفق PDPL التي لا تملك تعيين فئة محدداً. ويظل عند مستوى Confidential باعتباره الحد الأدنى المحمي غير المرفوع؛ ويلزم مبدأ NDMO الثاني مراجعاً مؤهلاً بتقييم الأثر السلبي الفعلي وطبيعة البيانات وحساسيتها قبل الاعتماد على أي تصنيف أعلى."
+      citation:
+        article: "Section 4.2 — Principle 2: Classification Based on Necessity"
+        quote: "Where data must be classified, the level of classification, and the safeguards and controls associated with the classification level, should be based on the potential adverse impact as a result of unauthorized disclosure, subject to the nature and sensitivity of the data."
+        source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
   sector_defaults:
     development:
       level: Public

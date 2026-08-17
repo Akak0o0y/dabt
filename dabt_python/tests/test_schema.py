@@ -77,3 +77,36 @@ def test_valid_rule_is_accepted() -> None:
     compliance_map = validate_map_payload(payload_with(base_rule()))
     assert compliance_map.rules[0].id == "TEST-RULE"
     assert compliance_map.rules[0].requires_legal_review is True
+
+
+def inferred_sensitive_classification() -> dict:
+    return {
+        "level": "Secret",
+        "confidence_level": "inferred",
+        "requires_legal_review": True,
+        "rationale_en": "A documented inference.",
+        "rationale_ar": "استدلال موثق.",
+        "citation": {
+            "article": "Section 4.2 — Principle 2",
+            "quote": "The level of classification should be based on potential adverse impact.",
+            "source_url": "https://example.test/ndmo",
+        },
+    }
+
+
+def test_inferred_classification_requires_bilingual_rationale() -> None:
+    entry = inferred_sensitive_classification()
+    entry.pop("rationale_ar")
+    payload = payload_with(base_rule())
+    payload["classification"] = {"finding_levels": {"sensitive_data.health": entry}}
+    with pytest.raises(SchemaError, match="sensitive_data.health.*rationale_ar"):
+        validate_map_payload(payload)
+
+
+def test_inferred_classification_requires_a_citation() -> None:
+    entry = inferred_sensitive_classification()
+    entry.pop("citation")
+    payload = payload_with(base_rule())
+    payload["classification"] = {"finding_levels": {"sensitive_data.health": entry}}
+    with pytest.raises(SchemaError, match="sensitive_data.health.*citation"):
+        validate_map_payload(payload)

@@ -64,6 +64,9 @@ class ClassificationMapping:
     level: NdmoLevel
     confidence_level: ConfidenceLevel
     requires_legal_review: bool
+    rationale_en: str | None = None
+    rationale_ar: str | None = None
+    citation: Citation | None = None
 
 
 @dataclass(frozen=True)
@@ -86,7 +89,15 @@ class ClassificationPolicy:
     def with_finding_level(self, key: str, level: str) -> "ClassificationPolicy":
         canonical = NdmoLevel(level)
         updated = tuple(
-            ClassificationMapping(key, canonical, mapping.confidence_level, mapping.requires_legal_review)
+            ClassificationMapping(
+                key,
+                canonical,
+                mapping.confidence_level,
+                mapping.requires_legal_review,
+                mapping.rationale_en,
+                mapping.rationale_ar,
+                mapping.citation,
+            )
             if mapping.key == key
             else mapping
             for mapping in self.finding_levels
@@ -170,6 +181,16 @@ def _legal_review(value: Any, label: str) -> bool:
     return True
 
 
+def _parse_citation(raw: Any, label: str) -> Citation:
+    if not isinstance(raw, Mapping):
+        raise SchemaError(f"{label}: citation must be an object")
+    return Citation(
+        article=_non_empty(_require(raw, "article", label), f"{label}.article"),
+        quote=_non_empty(_require(raw, "quote", label), f"{label}.quote"),
+        source_url=_non_empty(_require(raw, "source_url", label), f"{label}.source_url"),
+    )
+
+
 def _parse_mapped_control(raw: Mapping[str, Any], rule_id: str, index: int) -> MappedControl:
     label = f"{rule_id}: mapped control {index}"
     framework = _non_empty(_require(raw, "framework", label), f"{label}.framework")
@@ -196,16 +217,7 @@ def _parse_rule(raw: Mapping[str, Any]) -> Rule:
     for field in _REQUIRED_RULE_FIELDS:
         _require(raw, field, rule_id)
 
-    citation_raw = raw["citation"]
-    if not isinstance(citation_raw, Mapping):
-        raise SchemaError(f"{rule_id}: citation must be an object")
-    citation = Citation(
-        article=_non_empty(_require(citation_raw, "article", rule_id), f"{rule_id}.citation.article"),
-        quote=_non_empty(_require(citation_raw, "quote", rule_id), f"{rule_id}.citation.quote"),
-        source_url=_non_empty(
-            _require(citation_raw, "source_url", rule_id), f"{rule_id}.citation.source_url"
-        ),
-    )
+    citation = _parse_citation(raw["citation"], f"{rule_id}.citation")
 
     try:
         decision = Decision(raw["decision"])
@@ -295,17 +307,34 @@ def _parse_classification_entries(raw: Any, section: str) -> tuple[Classificatio
         label = f"classification.{section}.{key}"
         if not isinstance(data, Mapping):
             raise SchemaError(f"{label}: must be an object")
+        confidence = _confidence(
+            _require(data, "confidence_level", label), f"{label}.confidence_level"
+        )
+        rationale_en: str | None = None
+        rationale_ar: str | None = None
+        citation: Citation | None = None
+        if confidence == ConfidenceLevel.INFERRED:
+            rationale_en = _non_empty(
+                _require(data, "rationale_en", label), f"{label}.rationale_en"
+            )
+            rationale_ar = _non_empty(
+                _require(data, "rationale_ar", label), f"{label}.rationale_ar"
+            )
+            citation = _parse_citation(
+                _require(data, "citation", label), f"{label}.citation"
+            )
         entries.append(
             ClassificationMapping(
                 key=_non_empty(str(key), f"{label}.key"),
                 level=_parse_ndmo_level(_require(data, "level", label), f"{label}.level"),
-                confidence_level=_confidence(
-                    _require(data, "confidence_level", label), f"{label}.confidence_level"
-                ),
+                confidence_level=confidence,
                 requires_legal_review=_legal_review(
                     _require(data, "requires_legal_review", label),
                     f"{label}.requires_legal_review",
                 ),
+                rationale_en=rationale_en,
+                rationale_ar=rationale_ar,
+                citation=citation,
             )
         )
     return tuple(entries)

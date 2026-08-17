@@ -29,6 +29,21 @@ def test_every_entry_requires_legal_review() -> None:
             assert mapped.requires_legal_review is True, f"{rule.id}:{mapped.control_id}"
 
 
+def test_inferred_sensitive_classifications_have_cited_bilingual_rationales() -> None:
+    compliance_map = load_compliance_map(MAP_PATH)
+    inferred_sensitive = [
+        entry for entry in compliance_map.classification.finding_levels
+        if entry.key.startswith("sensitive_data.") and entry.confidence_level == "inferred"
+    ]
+    assert inferred_sensitive
+    for entry in inferred_sensitive:
+        assert entry.rationale_en and entry.rationale_en.strip(), entry.key
+        assert entry.rationale_ar and entry.rationale_ar.strip(), entry.key
+        assert entry.citation and entry.citation.quote.strip(), entry.key
+        assert "Principle 2" in entry.citation.article, entry.key
+        assert entry.requires_legal_review is True, entry.key
+
+
 def test_no_verified_ecc_leaf_control_is_claimed() -> None:
     compliance_map = load_compliance_map(MAP_PATH)
     for rule in compliance_map.rules:
