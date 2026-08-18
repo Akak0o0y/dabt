@@ -108,3 +108,32 @@ def test_retrieval_rejects_an_empty_timestamp() -> None:
         "/v1/retrieval/evaluate", json={"document": "Public report.", "timestamp": ""}
     )
     assert response.status_code == 422
+
+
+def test_retrieval_accepts_iso_8601_instants() -> None:
+    for stamp in ("2026-08-18T09:00:00Z", "2026-08-18T09:00:00+03:00", "2026-08-18T09:00:00.123456Z"):
+        response = client.post(
+            "/v1/retrieval/evaluate", json={"document": "Public report.", "timestamp": stamp}
+        )
+        assert response.status_code == 200, stamp
+        assert response.json()["audit"]["timestamp"] == stamp
+
+
+def test_retrieval_rejects_a_timestamp_that_is_not_an_instant() -> None:
+    for stamp in ("banana", "2026-13-45T99:99:99Z", "yesterday", "1787054457092"):
+        response = client.post(
+            "/v1/retrieval/evaluate", json={"document": "Public report.", "timestamp": stamp}
+        )
+        assert response.status_code == 422, stamp
+        assert response.json()["legal_review_disclaimer_en"]
+
+
+def test_retrieval_rejects_a_naive_timestamp() -> None:
+    # A wall-clock reading with no offset does not identify an instant, so an
+    # audit record built on one cannot say when the decision was made.
+    response = client.post(
+        "/v1/retrieval/evaluate",
+        json={"document": "Public report.", "timestamp": "2026-08-18T09:00:00"},
+    )
+    assert response.status_code == 422
+    assert response.json()["legal_review_disclaimer_ar"]

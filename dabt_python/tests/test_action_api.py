@@ -101,3 +101,25 @@ def test_action_result_requires_an_explicit_timestamp() -> None:
         json={"server_id": "cranl", "tool": "get_logs", "result": {}},
     )
     assert response.status_code == 422
+
+
+def test_action_rejects_a_timestamp_that_is_not_an_instant() -> None:
+    response = client.post(
+        "/v1/action/evaluate",
+        json={"server_id": "cranl", "tool": "get_logs", "arguments": {}, "timestamp": "banana"},
+    )
+    assert response.status_code == 422
+    assert response.json()["legal_review_disclaimer_en"]
+
+
+def test_action_result_rejects_a_naive_timestamp() -> None:
+    response = client.post(
+        "/v1/action/result",
+        json={
+            "server_id": "cranl",
+            "tool": "get_logs",
+            "result": {},
+            "timestamp": "2026-08-18T09:00:00",
+        },
+    )
+    assert response.status_code == 422

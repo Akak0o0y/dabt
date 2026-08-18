@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from dabt_core.action import ActionEngine, ActionRequest, ActionResultRequest
 from dabt_core.audit import LEGAL_REVIEW_DISCLAIMER_AR, LEGAL_REVIEW_DISCLAIMER_EN
@@ -42,6 +43,24 @@ def caveat_payload() -> dict[str, str]:
     }
 
 
+def serialisable_errors(errors: Any) -> list[dict[str, Any]]:
+    """Render validation errors as JSON.
+
+    Pydantic puts the exception object a custom validator raised into `ctx`, and
+    an exception cannot be serialised. Emitting it unchanged turns a 422 into a
+    500, which would report a service failure for what is really a malformed
+    request - and would drop the bilingual caveat along the way.
+    """
+    cleaned: list[dict[str, Any]] = []
+    for error in errors:
+        item = {key: value for key, value in error.items() if key != "ctx"}
+        context = error.get("ctx")
+        if context:
+            item["ctx"] = {key: str(value) for key, value in context.items()}
+        cleaned.append(item)
+    return cleaned
+
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(_: Any, exc: RequestValidationError) -> JSONResponse:
     return JSONResponse(
@@ -49,7 +68,7 @@ async def validation_exception_handler(_: Any, exc: RequestValidationError) -> J
         content={
             "detail_en": "Request validation failed; no compliance decision was produced.",
             "detail_ar": "فشل التحقق من صحة الطلب؛ لم يُنتج أي قرار امتثال.",
-            "validation_errors": exc.errors(),
+            "validation_errors": serialisable_errors(exc.errors()),
             **caveat_payload(),
         },
     )
@@ -67,7 +86,41 @@ async def unexpected_exception_handler(_: Any, __: Exception) -> JSONResponse:
     )
 
 
-class RetrievalEvaluatePayload(BaseModel):
+class TimestampedPayload(BaseModel):
+    """Every evaluation must name the instant it was made.
+
+    The engine is a pure function that takes its clock from the caller, which is
+    what makes its output reproducible. That only holds if the caller supplies a
+    real instant: a missing, malformed, or timezone-naive value would still seal
+    an audit record, and a record that cannot say when the decision was made is
+    worse than no record at all.
+    """
+
+    timestamp: str = Field(min_length=1, max_length=64)
+
+    @field_validator("timestamp")
+    @classmethod
+    def _require_iso_8601_instant(cls, value: str) -> str:
+        # datetime.fromisoformat only accepts a trailing Z from Python 3.11.
+        # Normalising here keeps the check identical across supported versions.
+        candidate = f"{value[:-1]}+00:00" if value.endswith("Z") else value
+        try:
+            parsed = datetime.fromisoformat(candidate)
+        except ValueError as exc:
+            raise ValueError(
+                "must be an ISO 8601 instant, for example 2026-08-18T09:00:00Z"
+            ) from exc
+        if parsed.tzinfo is None:
+            raise ValueError(
+                "must carry an explicit UTC offset; a wall-clock reading does not "
+                "identify an instant"
+            )
+        # The caller's own representation is preserved rather than normalised, so
+        # the audit record states exactly what was asserted to it.
+        return value
+
+
+class RetrievalEvaluatePayload(TimestampedPayload):
     document: str = Field(min_length=1, max_length=100_000)
     agent_id: str = Field(default="demo-agent", max_length=128)
     purpose: str = Field(default="retrieval", max_length=256)
@@ -77,13 +130,9 @@ class RetrievalEvaluatePayload(BaseModel):
     event_type: str = Field(default="disclosure", max_length=128)
     agent_authorised: bool = True
     requires_minimisation: bool = True
-    # Required, never defaulted. The engine takes its clock from the caller,
-    # so a default would let a caller who omits the field seal a full set of
-    # audit records that all attest to the wrong instant.
-    timestamp: str = Field(min_length=1, max_length=64)
 
 
-class ActionContextPayload(BaseModel):
+class ActionContextPayload(TimestampedPayload):
     server_id: str = Field(min_length=1, max_length=128)
     tool: str = Field(min_length=1, max_length=256)
     agent_id: str = Field(default="demo-agent", max_length=128)
@@ -92,10 +141,6 @@ class ActionContextPayload(BaseModel):
     sector: str = Field(default="development", max_length=128)
     agent_authorised: bool = True
     requires_minimisation: bool = True
-    # Required, never defaulted. The engine takes its clock from the caller,
-    # so a default would let a caller who omits the field seal a full set of
-    # audit records that all attest to the wrong instant.
-    timestamp: str = Field(min_length=1, max_length=64)
 
 
 class ActionEvaluatePayload(ActionContextPayload):
