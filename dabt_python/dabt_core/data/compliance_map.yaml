@@ -422,3 +422,78 @@ rules:
     sama_maturity_contribution: 5
     confidence_level: verified
     requires_legal_review: true
+
+  - id: PDPL-ART29-2C-INFERRED-RESIDENCY
+    priority: 300
+    decision: REVIEW
+    framework: PDPL
+    citation:
+      article: "Article 29(2)(c)"
+      quote: "The Transfer or Disclosure shall be limited to the minimum amount of Personal Data needed."
+      source_url: "https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf"
+    condition:
+      surface: action
+      persists_data: true
+      deployment_region_in_kingdom: false
+    rationale_en: "This action would place a data store outside the Kingdom. Article 29 governs the transfer of Personal Data outside the Kingdom; provisioning transfers nothing yet, and Dabt cannot know whether Personal Data will later come to rest there. Extending Article 29 from transfer to provisioning is an explicit inference and is escalated to a qualified reviewer rather than decided automatically."
+    rationale_ar: "سيؤدي هذا الإجراء إلى إنشاء مخزن بيانات خارج المملكة. تحكم المادة 29 نقل البيانات الشخصية خارج المملكة؛ ولا يترتب على مجرد التجهيز أي نقل حتى الآن، ولا يمكن لضبط أن يعرف ما إذا كانت بيانات شخصية ستُخزَّن هناك لاحقاً. ويُعد توسيع المادة 29 من النقل إلى التجهيز استنتاجاً صريحاً، ولذلك يُحال إلى مراجع مؤهل بدلاً من البت فيه آلياً."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "4-2"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: needs_verification
+    requires_legal_review: true
+
+  - id: NCA-ECC-CREDENTIAL-DISCLOSURE
+    priority: 310
+    decision: REVIEW
+    framework: NCA_ECC_2_2024
+    citation:
+      article: "Subdomain 2-2 — Identity and Access Management"
+      quote: "To ensure protecting cybersecurity of logical access to information and technology assets, in order to prevent unauthorized access and restrict access to the extent necessary for accomplishment of the assigned tasks of the entity."
+      source_url: "https://nca.gov.sa/en/regulatory-documents/controls-list/ecc/"
+    condition:
+      surface: action
+      leg: response
+      response_declared_credential: true
+    rationale_en: "The tool manifest declares that this call returns a credential, which would place a live secret in an AI agent's context. The subdomain objective quoted here is drawn from a secondary listing rather than transcribed from the official NCA publication, so this mapping cannot claim verified status and the decision is escalated to a qualified reviewer."
+    rationale_ar: "يُعلن بيان الأدوات أن هذا الاستدعاء يعيد بيانات اعتماد، مما يضع سراً فعّالاً في سياق وكيل ذكاء اصطناعي. والهدف المقتبس لهذا النطاق الفرعي مأخوذ من مصدر ثانوي وليس منقولاً من منشور الهيئة الوطنية للأمن السيبراني الرسمي، ولذلك لا يمكن اعتماد هذا التعيين موثقاً، ويُحال القرار إلى مراجع مؤهل."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-2"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 3
+    confidence_level: needs_verification
+    requires_legal_review: true
+
+  - id: ACTION-DEFAULT-ALLOW-NO-FINDING
+    priority: 950
+    decision: ALLOW
+    framework: NDMO
+    citation:
+      article: "Section 4.3 — Data Classification Levels"
+      quote: "Data shall be classified as ‘Public’, if unauthorized access to or disclosure of such data or its content has no impact on: National Interest, or Organizations, or Individuals, or Environment."
+      source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
+    condition:
+      surface: action
+      tool_manifested: true
+      tool_confidence: verified
+      contains_personal_data: false
+      contains_sensitive_data: false
+      undeclared_response_fields: false
+    rationale_en: "No mapped rule objected. The tool is declared in a validated manifest at verified confidence, no personal or sensitive data was detected in its arguments or declared response, and every field of the response was declared. This records the absence of a mapped objection. It is not a determination that the action is lawful, safe, or authorised, and it makes no claim about operational consequences such as data loss."
+    rationale_ar: "لم تعترض أي قاعدة معيَّنة. فالأداة معلنة في بيان أدوات مُتحقَّق منه بمستوى ثقة موثق، ولم تُكتشف بيانات شخصية أو حساسة في وسائطها أو في استجابتها المعلنة، وكل حقول الاستجابة معلنة. ويسجل هذا غياب الاعتراض المعيَّن، وهو ليس تقريراً بأن الإجراء مشروع أو آمن أو مصرح به، ولا يتضمن أي ادعاء بشأن العواقب التشغيلية مثل فقدان البيانات."
+    mapped_controls:
+      - framework: NCA_ECC_2_2024
+        control_id: "2-12"
+        granularity: subdomain
+        confidence_level: needs_verification
+        requires_legal_review: true
+    sama_maturity_contribution: 5
+    confidence_level: verified
+    requires_legal_review: true

@@ -21,6 +21,24 @@ _MATCHING_CONTEXTS = {
     "PDPL-ART11-3-MINIMISATION": {"contains_personal_data": True, "requires_minimisation": True},
     "NDMO-SECRET-RESTRICTED-ACCESS": {"classification": "Secret", "agent_authorised": True},
     "NDMO-PUBLIC-ALLOW": {"classification": "Public", "surface": "retrieval"},
+    "PDPL-ART29-2C-INFERRED-RESIDENCY": {
+        "surface": "action",
+        "persists_data": True,
+        "deployment_region_in_kingdom": False,
+    },
+    "NCA-ECC-CREDENTIAL-DISCLOSURE": {
+        "surface": "action",
+        "leg": "response",
+        "response_declared_credential": True,
+    },
+    "ACTION-DEFAULT-ALLOW-NO-FINDING": {
+        "surface": "action",
+        "tool_manifested": True,
+        "tool_confidence": "verified",
+        "contains_personal_data": False,
+        "contains_sensitive_data": False,
+        "undeclared_response_fields": False,
+    },
 }
 
 
