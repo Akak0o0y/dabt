@@ -7,6 +7,7 @@ import { adminProcedure, protectedProcedure, publicProcedure, router } from "./_
 import { evaluateDabt, getDabtComplianceMap } from "./dabt";
 import { getAuditEvidence, listAuditEvidence, persistAuditEvidence } from "./evidence";
 import { approveAuditEvidence, getEvidenceReview } from "./review";
+import { DABT_BUILD_INFO } from "./buildInfo";
 
 const dabtEvaluationInput = z.object({
   document: z.string().min(1).max(100_000),
@@ -34,9 +35,8 @@ export const appRouter = router({
     }),
   }),
   dabt: router({
-    evaluate: publicProcedure
-      .input(dabtEvaluationInput)
-      .mutation(({ input }) => evaluateDabt(input)),
+    buildInfo: publicProcedure.query(() => DABT_BUILD_INFO),
+    evaluate: publicProcedure.input(dabtEvaluationInput).mutation(({ input }) => evaluateDabt(input)),
     evaluateAndPersist: protectedProcedure
       .input(dabtEvaluationInput)
       .mutation(async ({ ctx, input }) => {

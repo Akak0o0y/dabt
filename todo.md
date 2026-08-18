@@ -138,4 +138,5 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Confirm the stable deployed demo URL reflects the final documentation checkpoint
 - [x] Verify a production deploy signal that maps the stable demo URL to the final documentation checkpoint or Git commit (checkpoint `9b13792a` auto-published; production root returned HTTP 200 with `Last-Modified: Mon, 17 Aug 2026 14:50:59 GMT`)
 - [ ] Add and verify a non-invasive app-visible build version signal that maps the production demo to the final Git commit
+- [ ] Expose the final build manifest through a public server procedure because static production manifest routes fall through to the client 404 page
 - [ ] Commit and push the final documentation-and-stability wrap-up as one discrete GitHub commit
