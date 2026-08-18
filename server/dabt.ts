@@ -112,7 +112,9 @@ export async function evaluateDabt(input: DabtEvaluateInput): Promise<DabtPayloa
     event_type: input.eventType ?? "disclosure",
     agent_authorised: input.agentAuthorised ?? true,
     requires_minimisation: input.requiresMinimisation ?? true,
-    timestamp: "2026-08-17T00:00:00Z",
+    // The engine is pure and takes its clock from the caller. This must be the
+    // real evaluation instant: it is sealed verbatim into the audit record.
+    timestamp: new Date().toISOString(),
   });
 }
 

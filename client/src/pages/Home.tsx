@@ -25,13 +25,51 @@ type DabtResult = {
   legal_review_disclaimer_ar: string;
 };
 
-const SAMPLE_DOCUMENT = `Customer onboarding note — SYNTHETIC DEMO DATA ONLY
+type Preset = {
+  id: string;
+  label: string;
+  caption: string;
+  document: string;
+  crossBorder: boolean;
+  lawfulBasis: string;
+};
+
+/**
+ * The default preset must resolve to ALLOW_WITH_REDACTION. Article 29(2)(c)
+ * redaction-before-transfer is the mechanism this gate exists to demonstrate,
+ * so a first-time visitor has to see it without editing the sample text.
+ */
+const PRESETS: Preset[] = [
+  {
+    id: "cross-border-minimisation",
+    label: "CROSS-BORDER TRANSFER",
+    caption: "Art. 29(2)(c) · minimise before transfer",
+    document: `Customer onboarding note — SYNTHETIC DEMO DATA ONLY
 
 Applicant National ID: 1000000008
 Contact: +966501234567
 Settlement account: SA03 8000 0000 6080 1016 7519
 
-The customer record includes a medical diagnosis from a partner clinic. Send the submitted information to the overseas AI analyst for document summarisation.`;
+Send the submitted onboarding record to the overseas AI analyst for document summarisation.`,
+    crossBorder: true,
+    lawfulBasis: "consent",
+  },
+  {
+    id: "prohibited-sensitive-disclosure",
+    label: "PROHIBITED DISCLOSURE",
+    caption: "Art. 6(4) · sensitive data on legitimate interest",
+    document: `Customer onboarding note — SYNTHETIC DEMO DATA ONLY
+
+Applicant National ID: 1000000008
+Contact: +966501234567
+
+The customer record includes a medical diagnosis from a partner clinic. Send the submitted information to the overseas AI analyst for document summarisation.`,
+    crossBorder: true,
+    lawfulBasis: "legitimate_interest",
+  },
+];
+
+const DEFAULT_PRESET = PRESETS[0];
 
 const classificationStyle: Record<string, string> = {
   Public: "classification-public",
@@ -43,9 +81,10 @@ const classificationStyle: Record<string, string> = {
 export default function Home() {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const trpcUtils = trpc.useUtils();
-  const [document, setDocument] = useState(SAMPLE_DOCUMENT);
-  const [crossBorder, setCrossBorder] = useState(true);
-  const [lawfulBasis, setLawfulBasis] = useState("legitimate_interest");
+  const [presetId, setPresetId] = useState(DEFAULT_PRESET.id);
+  const [document, setDocument] = useState(DEFAULT_PRESET.document);
+  const [crossBorder, setCrossBorder] = useState(DEFAULT_PRESET.crossBorder);
+  const [lawfulBasis, setLawfulBasis] = useState(DEFAULT_PRESET.lawfulBasis);
   const [result, setResult] = useState<DabtResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<string | null>(null);
@@ -103,12 +142,15 @@ export default function Home() {
     evaluate.mutate(input);
   };
 
-  const reset = () => {
-    setDocument(SAMPLE_DOCUMENT);
-    setCrossBorder(true);
-    setLawfulBasis("legitimate_interest");
+  const applyPreset = (preset: Preset) => {
+    setPresetId(preset.id);
+    setDocument(preset.document);
+    setCrossBorder(preset.crossBorder);
+    setLawfulBasis(preset.lawfulBasis);
     setResult(null);
   };
+
+  const reset = () => applyPreset(PRESETS.find(preset => preset.id === presetId) ?? DEFAULT_PRESET);
 
   const copyRedacted = async () => {
     if (!result) return;
@@ -195,6 +237,20 @@ export default function Home() {
           <div className="panel-heading">
             <div><p className="eyebrow">01 / INPUT PLANE</p><h2>Document payload</h2></div>
             <FileText size={19} />
+          </div>
+          <div className="preset-row" role="group" aria-label="Demonstration scenario">
+            {PRESETS.map(preset => (
+              <button
+                key={preset.id}
+                type="button"
+                className={preset.id === presetId ? "preset-chip preset-chip-active" : "preset-chip"}
+                aria-pressed={preset.id === presetId}
+                onClick={() => applyPreset(preset)}
+              >
+                <strong>{preset.label}</strong>
+                <small>{preset.caption}</small>
+              </button>
+            ))}
           </div>
           <label htmlFor="payload" className="input-label">PASTE RETRIEVAL CONTENT <span>SYNTHETIC DEMO DATA ONLY</span></label>
           <textarea id="payload" value={document} onChange={event => setDocument(event.target.value)} spellCheck={false} />

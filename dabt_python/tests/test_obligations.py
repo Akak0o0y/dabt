@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 from dabt_core.detectors.base import Finding
+from dabt_core.detectors.sensitive import SensitiveDataDetector
 from dabt_core.engine import PolicyDecision
 from dabt_core.loader import load_compliance_map
 from dabt_core.obligations import resolve_obligations
@@ -34,3 +35,25 @@ def test_allow_with_redaction_without_a_fired_rule_directive_has_no_obligation()
     assert resolve_obligations(
         PolicyDecision(Decision.ALLOW_WITH_REDACTION, synthetic, (synthetic,)), (personal_finding(),)
     ) == ()
+
+
+def sensitive_finding() -> Finding:
+    text = "Note. The applicant provided a fingerprint template today. Tail."
+    return SensitiveDataDetector().detect(text)[0]
+
+
+def test_sensitive_obligation_masks_the_content_span_in_full() -> None:
+    compliance_map = load_compliance_map("dabt_core/data/compliance_map.yaml")
+    partial = next(rule for rule in compliance_map.rules if rule.id == "PDPL-ART15-5-ANONYMISED-DISCLOSURE")
+    assert partial.obligation is not None and partial.obligation.strategy == "last_four"
+
+    finding = sensitive_finding()
+    obligation = resolve_obligations(
+        PolicyDecision(Decision.ALLOW_WITH_REDACTION, partial, (partial,)), (finding,)
+    )[0]
+
+    # The rule asks for partial masking, which is meaningful only for an
+    # identifier. Prose content is masked whole over the wider content span.
+    assert obligation.strategy == "full"
+    assert (obligation.start, obligation.end) == finding.redaction_span
+    assert (obligation.start, obligation.end) != (finding.start, finding.end)

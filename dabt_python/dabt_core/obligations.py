@@ -29,7 +29,10 @@ def resolve_obligations(policy_decision: object, findings: tuple[Finding, ...]) 
             applies = directive.scope == "personal_data" and finding.is_personal_data
             applies = applies or (directive.scope == "sensitive_data" and finding.type == "sensitive_data")
             if applies:
-                obligations.append(
-                    RedactionObligation(finding.start, finding.end, finding.type, directive.strategy)
-                )
+                start, end = finding.redaction_span
+                # last_four exists to keep an identifier's trailing digits
+                # legible. Applied to a prose span it would leak the tail of the
+                # sentence, so keyword-triggered content is always masked whole.
+                strategy = "full" if finding.type == "sensitive_data" else directive.strategy
+                obligations.append(RedactionObligation(start, end, finding.type, strategy))
     return tuple(obligations)

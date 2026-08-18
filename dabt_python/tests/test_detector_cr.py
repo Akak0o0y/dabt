@@ -14,3 +14,8 @@ def test_detects_known_jeddah_and_dammam_prefixes() -> None:
 
 def test_ignores_unknown_commercial_registration_prefix() -> None:
     assert CommercialRegistrationDetector().detect("9990123456") == []
+
+
+def test_commercial_registration_counts_as_personal_data() -> None:
+    finding = CommercialRegistrationDetector().detect("CR 1010123456 on file")[0]
+    assert finding.is_personal_data is True

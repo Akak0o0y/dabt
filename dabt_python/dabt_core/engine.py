@@ -63,6 +63,8 @@ class EngineResult:
                     "confidence_level": item.confidence_level,
                     "checksum_result": item.checksum_result,
                     "sensitive_category": item.sensitive_category,
+                    "redaction_start": item.redaction_span[0],
+                    "redaction_end": item.redaction_span[1],
                 }
                 for item in self.findings
             ],
