@@ -10,14 +10,23 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from dabt_core.action import ActionEngine, ActionRequest, ActionResultRequest
 from dabt_core.audit import LEGAL_REVIEW_DISCLAIMER_AR, LEGAL_REVIEW_DISCLAIMER_EN
 from dabt_core.engine import EngineRequest, PolicyEngine
 from dabt_core.loader import load_compliance_map
+from dabt_core.manifest import load_manifest
 
 
 MAP_PATH = Path(__file__).parents[1] / "dabt_core" / "data" / "compliance_map.yaml"
 COMPLIANCE_MAP = load_compliance_map(MAP_PATH)
 ENGINE = PolicyEngine(COMPLIANCE_MAP)
+
+MANIFEST_DIR = Path(__file__).parents[1] / "dabt_core" / "data" / "manifests"
+MANIFESTS = {
+    manifest.server_id: manifest
+    for manifest in (load_manifest(path) for path in sorted(MANIFEST_DIR.glob("*.yaml")))
+}
+ACTION_ENGINE = ActionEngine(COMPLIANCE_MAP, MANIFESTS)
 
 app = FastAPI(
     title="Dabt Core API",
@@ -71,6 +80,42 @@ class RetrievalEvaluatePayload(BaseModel):
     timestamp: str = "1970-01-01T00:00:00Z"
 
 
+class ActionContextPayload(BaseModel):
+    server_id: str = Field(min_length=1, max_length=128)
+    tool: str = Field(min_length=1, max_length=256)
+    agent_id: str = Field(default="demo-agent", max_length=128)
+    purpose: str = Field(default="action", max_length=256)
+    lawful_basis: str = Field(default="consent", max_length=128)
+    sector: str = Field(default="development", max_length=128)
+    agent_authorised: bool = True
+    requires_minimisation: bool = True
+    timestamp: str = "1970-01-01T00:00:00Z"
+
+
+class ActionEvaluatePayload(ActionContextPayload):
+    arguments: dict[str, Any] = Field(default_factory=dict)
+
+
+class ActionResultPayload(ActionContextPayload):
+    result: dict[str, Any] = Field(default_factory=dict)
+
+
+def failed_closed(detail_en: str, detail_ar: str) -> dict[str, Any]:
+    """A gate that cannot decide denies. Failing open would defeat the gate."""
+    return {
+        "decision": "DENY",
+        "decision_rule_id": None,
+        "service_error": True,
+        "detail_en": detail_en,
+        "detail_ar": detail_ar,
+        "released_arguments": None,
+        "released_result": None,
+        "rewritten": False,
+        "policy_map_version": COMPLIANCE_MAP.version,
+        **caveat_payload(),
+    }
+
+
 @app.post("/v1/retrieval/evaluate")
 def evaluate_retrieval(payload: RetrievalEvaluatePayload) -> dict[str, Any]:
     result = ENGINE.evaluate(
@@ -90,17 +135,56 @@ def evaluate_retrieval(payload: RetrievalEvaluatePayload) -> dict[str, Any]:
     return {**result, "policy_map_version": COMPLIANCE_MAP.version, **caveat_payload()}
 
 
-@app.post("/v1/action/evaluate", status_code=501)
-def evaluate_action(_: dict[str, Any]) -> JSONResponse:
-    return JSONResponse(
-        status_code=501,
-        content={
-            "detail_en": "The Agent Action Gate is architected but not implemented in this reference release.",
-            "detail_ar": "صُمِّمت بوابة إجراءات الوكيل معمارياً، لكنها غير مطبقة في هذا الإصدار المرجعي.",
-            "status": "not_implemented",
-            **caveat_payload(),
-        },
-    )
+@app.post("/v1/action/evaluate")
+def evaluate_action(payload: ActionEvaluatePayload) -> dict[str, Any]:
+    """Request leg: gate the act itself, before any side effect occurs."""
+    try:
+        result = ACTION_ENGINE.evaluate(
+            ActionRequest(
+                server_id=payload.server_id,
+                tool=payload.tool,
+                arguments=payload.arguments,
+                agent_id=payload.agent_id,
+                purpose=payload.purpose,
+                lawful_basis=payload.lawful_basis,
+                sector=payload.sector,
+                agent_authorised=payload.agent_authorised,
+                requires_minimisation=payload.requires_minimisation,
+            ),
+            payload.timestamp,
+        ).to_dict()
+    except Exception:  # noqa: BLE001 - the gate denies on any failure it cannot describe
+        return failed_closed(
+            "The Action Gate could not evaluate this call and therefore denied it.",
+            "تعذر على بوابة الإجراءات تقييم هذا الاستدعاء، ولذلك رفضته.",
+        )
+    return {**result, "policy_map_version": COMPLIANCE_MAP.version, **caveat_payload()}
+
+
+@app.post("/v1/action/result")
+def evaluate_action_result(payload: ActionResultPayload) -> dict[str, Any]:
+    """Response leg: gate the disclosure of what the act returned."""
+    try:
+        result = ACTION_ENGINE.evaluate_result(
+            ActionResultRequest(
+                server_id=payload.server_id,
+                tool=payload.tool,
+                result=payload.result,
+                agent_id=payload.agent_id,
+                purpose=payload.purpose,
+                lawful_basis=payload.lawful_basis,
+                sector=payload.sector,
+                agent_authorised=payload.agent_authorised,
+                requires_minimisation=payload.requires_minimisation,
+            ),
+            payload.timestamp,
+        ).to_dict()
+    except Exception:  # noqa: BLE001
+        return failed_closed(
+            "The Action Gate could not evaluate this result and therefore denied its disclosure.",
+            "تعذر على بوابة الإجراءات تقييم هذه النتيجة، ولذلك رفضت الإفصاح عنها.",
+        )
+    return {**result, "policy_map_version": COMPLIANCE_MAP.version, **caveat_payload()}
 
 
 @app.get("/v1/compliance-map")

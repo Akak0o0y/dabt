@@ -20,11 +20,22 @@ def test_retrieval_evaluate_returns_full_decision() -> None:
     assert body["policy_map_version"] == main.COMPLIANCE_MAP.version
 
 
-def test_action_gate_is_documented_not_implemented() -> None:
+def test_action_gate_is_implemented_and_validates_its_payload() -> None:
+    # This test previously asserted a documented 501. The Agent Action Gate is
+    # implemented now, so the same call must be rejected as malformed rather
+    # than answered with a not-implemented notice.
     response = client.post("/v1/action/evaluate", json={"action": "send_payment"})
-    assert response.status_code == 501
-    assert "not implemented" in response.json()["detail_en"].lower()
+    assert response.status_code == 422
     assert response.json()["legal_review_disclaimer_en"]
+
+
+def test_action_gate_evaluates_a_well_formed_call() -> None:
+    response = client.post(
+        "/v1/action/evaluate",
+        json={"server_id": "cranl", "tool": "get_logs", "arguments": {"app_id": "app-1"}},
+    )
+    assert response.status_code == 200
+    assert response.json()["decision"] in {"ALLOW", "ALLOW_WITH_REDACTION", "DENY", "REVIEW"}
 
 
 def test_map_endpoint_exposes_confidence_levels_without_authoritative_claim() -> None:
@@ -45,7 +56,10 @@ def test_invalid_request_returns_422_not_500_with_caveat() -> None:
 def test_every_endpoint_response_carries_legal_caveat() -> None:
     responses = [
         client.post("/v1/retrieval/evaluate", json={"document": "Public report."}),
-        client.post("/v1/action/evaluate", json={"action": "draft_email"}),
+        client.post(
+            "/v1/action/evaluate",
+            json={"server_id": "cranl", "tool": "get_logs", "arguments": {}},
+        ),
         client.get("/v1/compliance-map"),
     ]
     for response in responses:
