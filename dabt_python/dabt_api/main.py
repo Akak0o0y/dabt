@@ -77,7 +77,10 @@ class RetrievalEvaluatePayload(BaseModel):
     event_type: str = Field(default="disclosure", max_length=128)
     agent_authorised: bool = True
     requires_minimisation: bool = True
-    timestamp: str = "1970-01-01T00:00:00Z"
+    # Required, never defaulted. The engine takes its clock from the caller,
+    # so a default would let a caller who omits the field seal a full set of
+    # audit records that all attest to the wrong instant.
+    timestamp: str = Field(min_length=1, max_length=64)
 
 
 class ActionContextPayload(BaseModel):
@@ -89,7 +92,10 @@ class ActionContextPayload(BaseModel):
     sector: str = Field(default="development", max_length=128)
     agent_authorised: bool = True
     requires_minimisation: bool = True
-    timestamp: str = "1970-01-01T00:00:00Z"
+    # Required, never defaulted. The engine takes its clock from the caller,
+    # so a default would let a caller who omits the field seal a full set of
+    # audit records that all attest to the wrong instant.
+    timestamp: str = Field(min_length=1, max_length=64)
 
 
 class ActionEvaluatePayload(ActionContextPayload):

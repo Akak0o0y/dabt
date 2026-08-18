@@ -4,6 +4,7 @@ from dabt_api import main
 from dabt_api.main import app
 
 client = TestClient(app)
+TIMESTAMP = "2026-08-18T09:00:00Z"
 
 
 def test_action_evaluate_returns_a_decision() -> None:
@@ -13,6 +14,7 @@ def test_action_evaluate_returns_a_decision() -> None:
             "server_id": "cranl",
             "tool": "create_database",
             "arguments": {"region": "eu-west-1", "name": "customers"},
+            "timestamp": TIMESTAMP,
         },
     )
     assert response.status_code == 200
@@ -30,6 +32,7 @@ def test_action_result_endpoint_evaluates_the_response_leg() -> None:
             "server_id": "cranl",
             "tool": "list_env_vars",
             "result": {"variables": ["clean", "iban SA0380000000608010167519"]},
+            "timestamp": TIMESTAMP,
         },
     )
     assert response.status_code == 200
@@ -38,7 +41,8 @@ def test_action_result_endpoint_evaluates_the_response_leg() -> None:
 
 def test_action_gate_no_longer_returns_not_implemented() -> None:
     response = client.post(
-        "/v1/action/evaluate", json={"server_id": "cranl", "tool": "get_logs", "arguments": {}}
+        "/v1/action/evaluate",
+        json={"server_id": "cranl", "tool": "get_logs", "arguments": {}, "timestamp": TIMESTAMP},
     )
     assert response.status_code != 501
 
@@ -55,7 +59,8 @@ def test_engine_fails_closed_on_evaluation_error(monkeypatch) -> None:
 
     monkeypatch.setattr(main.ACTION_ENGINE, "evaluate", explode)
     response = client.post(
-        "/v1/action/evaluate", json={"server_id": "cranl", "tool": "get_logs", "arguments": {}}
+        "/v1/action/evaluate",
+        json={"server_id": "cranl", "tool": "get_logs", "arguments": {}, "timestamp": TIMESTAMP},
     )
     assert response.status_code == 200
     body = response.json()
@@ -71,10 +76,28 @@ def test_result_leg_fails_closed_on_evaluation_error(monkeypatch) -> None:
 
     monkeypatch.setattr(main.ACTION_ENGINE, "evaluate_result", explode)
     response = client.post(
-        "/v1/action/result", json={"server_id": "cranl", "tool": "get_logs", "result": {}}
+        "/v1/action/result",
+        json={"server_id": "cranl", "tool": "get_logs", "result": {}, "timestamp": TIMESTAMP},
     )
     assert response.status_code == 200
     body = response.json()
     assert body["decision"] == "DENY"
     assert body["service_error"] is True
     assert body["released_result"] is None
+
+
+def test_action_evaluate_requires_an_explicit_timestamp() -> None:
+    response = client.post(
+        "/v1/action/evaluate",
+        json={"server_id": "cranl", "tool": "get_logs", "arguments": {}},
+    )
+    assert response.status_code == 422
+    assert response.json()["legal_review_disclaimer_en"]
+
+
+def test_action_result_requires_an_explicit_timestamp() -> None:
+    response = client.post(
+        "/v1/action/result",
+        json={"server_id": "cranl", "tool": "get_logs", "result": {}},
+    )
+    assert response.status_code == 422
