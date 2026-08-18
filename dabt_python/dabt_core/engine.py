@@ -11,7 +11,8 @@ from .detectors import DEFAULT_DETECTORS
 from .detectors.base import Detector, Finding
 from .obligations import RedactionObligation, resolve_obligations
 from .redactor import apply_redactions
-from .schema import ComplianceMap, ConfidenceLevel, Decision, Rule
+from .rules import PolicyDecision, evaluate_policy, rule_matches
+from .schema import ComplianceMap, Decision, Rule
 
 
 @dataclass(frozen=True)
@@ -25,13 +26,6 @@ class EngineRequest:
     event_type: str = "disclosure"
     agent_authorised: bool = True
     requires_minimisation: bool = True
-
-
-@dataclass(frozen=True)
-class PolicyDecision:
-    decision: Decision
-    rule: Rule | None
-    fired_rules: tuple[Rule, ...]
 
 
 @dataclass(frozen=True)
@@ -76,33 +70,6 @@ class EngineResult:
             "redacted_document": self.redacted_document,
             "audit": self.audit.to_dict(),
         }
-
-
-def rule_matches(rule: Rule, context: Mapping[str, object]) -> bool:
-    """Match declared map conditions exactly; special category matching is set-aware."""
-    for key, expected in rule.condition.items():
-        if key == "contains_sensitive_category":
-            categories = context.get("sensitive_categories", context.get("contains_sensitive_category", frozenset()))
-            if isinstance(categories, str):
-                categories = frozenset({categories})
-            if expected not in categories:
-                return False
-            continue
-        if context.get(key) != expected:
-            return False
-    return True
-
-
-def _evaluate_policy(compliance_map: ComplianceMap, context: Mapping[str, object]) -> PolicyDecision:
-    fired_rules = tuple(rule for rule in compliance_map.rules if rule_matches(rule, context))
-    if not fired_rules:
-        return PolicyDecision(Decision.REVIEW, None, ())
-    winner = fired_rules[0]
-    decision = winner.decision
-    # Defence in depth: a directly constructed invalid in-memory map still cannot deny on unverified content.
-    if decision == Decision.DENY and winner.confidence_level == ConfidenceLevel.NEEDS_VERIFICATION:
-        decision = Decision.REVIEW
-    return PolicyDecision(decision, winner, fired_rules)
 
 
 class PolicyEngine:
@@ -152,7 +119,7 @@ class PolicyEngine:
             "contains_sensitive_data": bool(sensitive_categories),
             "sensitive_categories": sensitive_categories,
         }
-        policy = _evaluate_policy(self._map, context)
+        policy = evaluate_policy(self._map, context)
 
         stage("obligation_resolution")
         obligations = resolve_obligations(policy, findings)
