@@ -140,3 +140,19 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [ ] Add and verify a non-invasive app-visible build version signal that maps the production demo to the final Git commit
 - [ ] Expose the final build manifest through a public server procedure because static production manifest routes fall through to the client 404 page
 - [ ] Commit and push the final documentation-and-stability wrap-up as one discrete GitHub commit
+
+## Agent Action Gate - policy brain
+
+- [x] Shared `rules.py` so both surfaces cannot drift on condition matching
+- [x] Tool manifest types with load-time validation
+- [x] Reconstructed CranL manifest, every entry `needs_verification`
+- [x] `surface` scoping so the retrieval allow rule cannot permit an action
+- [x] Boundary-coverage test proving every map rule has a firing context
+- [x] Inferred region residency table in the compliance map
+- [x] Three action rules, including an explicit ALLOW path
+- [x] Per-element detection, obligations, and rewriting
+- [x] Two endpoints replacing the 501 stub, failing closed
+- [ ] Transcribe CranL's published tool schema and raise the manifest to `verified`
+- [ ] Reference MCP proxy (separate plan)
+- [ ] Harden the subprocess lifecycle before pitching fail-closed as a guarantee
+

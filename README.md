@@ -11,6 +11,7 @@ Every rule, mapping, and classification inference is deliberately labelled with 
 | Capability | What a reviewer can observe |
 |---|---|
 | **Retrieval gate** | Runs a deterministic six-stage policy pipeline: detection, classification, policy evaluation, obligation resolution, redaction, and bilingual audit logging. |
+| **Agent action gate** | Evaluates an MCP tool call before execution and its result before disclosure, returning the same four outcomes. Tool semantics come from a validated per-server manifest rather than name heuristics. Ships with a reconstructed CranL manifest whose entries are all `needs_verification`, so every action against it resolves to `REVIEW` until the published tool schema is transcribed. |
 | **Saudi data detection** | Detects Saudi National ID/Iqama patterns, Saudi IBANs, Saudi mobile numbers, Commercial Registration number formats, and selected PDPL Sensitive Data signals. Checksum failure lowers confidence; it does not silently suppress a finding. |
 | **Policy outcomes** | Separates `ALLOW`, `ALLOW_WITH_REDACTION`, `DENY`, and `REVIEW`. A mapping marked `needs_verification` cannot issue a terminal `DENY`; it degrades to `REVIEW`. |
 | **Evidence Vault** | Persists authenticated, owner-scoped, immutable evidence snapshots containing hashes, decision evidence, classification evidence, bilingual audit data, legal caveats, and policy-map version. It does **not** persist the source document or release payload. |
@@ -23,6 +24,7 @@ Every rule, mapping, and classification inference is deliberately labelled with 
 |---|---|
 | **Identity issuance or verification** | Dabt does not issue identity credentials, authenticate citizens, verify a person's legal identity, or connect to government identity systems. |
 | **RAG, search, or agent platform** | Dabt is not a search index, vector database, retrieval-augmented generation platform, document management system, or general-purpose AI agent. It is a retrieval-policy reference layer. |
+| **Operational safety** | Dabt gates regulatory violations, not operational blast radius. A destructive call carrying no regulated data passes the gate. Platforms should keep their own confirmation step for destructive operations. |
 | **Legal advisory or regulatory certification** | Dabt does not provide legal advice, certify compliance, replace a data-protection assessment, or determine that a transfer, disclosure, or classification is lawful. |
 | **Authoritative control mapping** | Current NCA ECC-2:2024 and SAMA CSF subdomain references are intentionally marked `needs_verification`; leaf-level ECC control IDs are not asserted as verified. |
 | **Automatic release after review** | A reviewer decision seals evidence; it does not automatically release the source payload or create a legal authorization. |
