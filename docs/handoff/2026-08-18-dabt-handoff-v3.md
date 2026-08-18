@@ -1,7 +1,7 @@
 # Dabt (ضبط) — Project Handoff v3
 
 **Date:** 18 August 2026
-**Repository:** `github.com/Akak0o0y/dabt`, branch `main`, tip `3401447`
+**Repository:** `github.com/Akak0o0y/dabt`, branch `main`, tip `9427513`
 **Live demo:** `dabt-demo-krxybfjz.manus.space` — **stale, do not cite** (see §5)
 
 This supersedes Handoff v2 (18 August 2026, 09:23 +03). Changes from v2 are
@@ -409,9 +409,13 @@ immediately elsewhere; only the Evidence Vault login depends on Manus OAuth.
 Ordered. Items 1–3 are engineering and can be done today; items 4–5 have the
 longest lead time and no engineering dependency.
 
-1. **Commit the two un-pushed production files** (§5.3) so the repository is a
-   faithful record of everything live. This de-risks the Manus sandbox
-   disappearing and removes the merge hazard in §5.4. Minutes of work.
+1. ~~**Commit the two un-pushed production files** (§5.3).~~ **Done** in
+   `0b24b12`. `server/_core/index.ts` is byte-identical to the deployed copy;
+   `server/dabt.ts` differs from it in exactly one place, the audit timestamp,
+   which keeps the real evaluation instant rather than the frozen literal the
+   deployed copy still carries. The merge hazard in §5.4 is closed, and
+   `0b7954a` additionally removed 4,058 lines of Manus platform scaffold that no
+   entry point or test reached.
 2. **Resolve deployment.** This is the only hard blocker on the engineering
    column. Either redeploy from Manus, or move hosting — the existing Dockerfile
    runs anywhere. Then verify behaviourally, not via `DABT_BUILD_INFO`, which is
@@ -430,6 +434,14 @@ longest lead time and no engineering dependency.
 5. **Start legal review of the compliance map.** Longest lead time, no
    engineering dependency, can begin the moment the map stops moving.
 
-Do not build either integration adapter speculatively (§4.1, §4.2). Do not
-rebuild the codebase — the valuable part is already separable; what would be
-replaced is scaffold.
+**[NEW] The Agent Action Gate is now specified and planned, not merely
+deferred.** Following the product thesis in §1, the second surface has a
+reviewed design specification (`docs/superpowers/specs/`) and an eleven-task TDD
+implementation plan for the policy brain (`docs/superpowers/plans/`). The
+reference MCP proxy is deliberately a separate plan. This is the work that makes
+a CranL conversation concrete, and it is unblocked — unlike deployment, it needs
+nothing from outside the repository.
+
+Do not build a retrieval adapter for Glean or Copilot speculatively (§4.2) — that
+one still waits on a named prospect. Do not rebuild the codebase; the valuable
+part is already separable, and what would be replaced is scaffold.
