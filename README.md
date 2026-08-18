@@ -1,0 +1,114 @@
+# Dabt Core / ضبط
+
+> **Dabt is a Saudi-focused reference implementation for controlling AI retrieval before a payload crosses a policy boundary.** It is an engineering tool, not a regulatory determination.
+
+Dabt evaluates a proposed retrieval payload, detects selected Saudi identifiers and sensitive-data signals, assigns an NDMO-oriented classification, applies the currently mapped policy rules, and returns one of four outcomes: `ALLOW`, `ALLOW_WITH_REDACTION`, `DENY`, or `REVIEW`. The demo shows the decision, the transformed release state, and the supporting bilingual evidence in English and Arabic.
+
+Every rule, mapping, and classification inference is deliberately labelled with a confidence level and `requires_legal_review: true`. **Nothing in Dabt is an authoritative legal, regulatory, or classification determination.** A qualified Saudi legal or compliance professional must review the applicable facts, entity context, and source regulations before any regulatory reliance.
+
+## What the current reference build does
+
+| Capability | What a reviewer can observe |
+|---|---|
+| **Retrieval gate** | Runs a deterministic six-stage policy pipeline: detection, classification, policy evaluation, obligation resolution, redaction, and bilingual audit logging. |
+| **Saudi data detection** | Detects Saudi National ID/Iqama patterns, Saudi IBANs, Saudi mobile numbers, Commercial Registration number formats, and selected PDPL Sensitive Data signals. Checksum failure lowers confidence; it does not silently suppress a finding. |
+| **Policy outcomes** | Separates `ALLOW`, `ALLOW_WITH_REDACTION`, `DENY`, and `REVIEW`. A mapping marked `needs_verification` cannot issue a terminal `DENY`; it degrades to `REVIEW`. |
+| **Evidence Vault** | Persists authenticated, owner-scoped, immutable evidence snapshots containing hashes, decision evidence, classification evidence, bilingual audit data, legal caveats, and policy-map version. It does **not** persist the source document or release payload. |
+| **Reviewer decision** | Allows an administrator to seal one bilingual `approved` or `rejected` disposition for a `REVIEW` snapshot. It is bound to the selected snapshot's integrity hash and a second write returns a conflict. |
+| **Classification reconciliation** | Displays a policy-inferred classification beside an optional qualified-reviewer classification. The comparison is explicitly non-authoritative and remains subject to professional review. |
+
+## What Dabt explicitly does **not** do
+
+| Out of scope | Clarification |
+|---|---|
+| **Identity issuance or verification** | Dabt does not issue identity credentials, authenticate citizens, verify a person's legal identity, or connect to government identity systems. |
+| **RAG, search, or agent platform** | Dabt is not a search index, vector database, retrieval-augmented generation platform, document management system, or general-purpose AI agent. It is a retrieval-policy reference layer. |
+| **Legal advisory or regulatory certification** | Dabt does not provide legal advice, certify compliance, replace a data-protection assessment, or determine that a transfer, disclosure, or classification is lawful. |
+| **Authoritative control mapping** | Current NCA ECC-2:2024 and SAMA CSF subdomain references are intentionally marked `needs_verification`; leaf-level ECC control IDs are not asserted as verified. |
+| **Automatic release after review** | A reviewer decision seals evidence; it does not automatically release the source payload or create a legal authorization. |
+
+## Standing legal-review caveat
+
+> **English:** This engineering output requires qualified Saudi legal or compliance review before regulatory reliance.
+>
+> **العربية:** يتطلب هذا المخرج الهندسي مراجعة قانونية أو مراجعة امتثال مؤهلة في المملكة العربية السعودية قبل الاعتماد التنظيمي.
+
+This caveat appears in every audit record. It applies to all policy rules, data-classification mappings, control references, reviewer dispositions, and comparison displays.
+
+## Current compliance-map coverage
+
+The current map version is `0.1.0-research-grounded`. The following table is a transparent inventory of the rules actually implemented in `dabt_python/dabt_core/data/compliance_map.yaml`; it is not a claim of complete regulatory coverage.
+
+### PDPL and NDMO decision rules
+
+| Rule ID | Framework reference | Current policy outcome | NCA ECC-2:2024 subdomains | SAMA CSF subdomains | Map confidence |
+|---|---|---|---|---|---|
+| `NDMO-TOP-SECRET-DENY` | NDMO §4.3, **Top Secret** | `DENY` | `2-7` | `3.3` | verified rule; mapped controls need verification |
+| `PDPL-ART6-4-SENSITIVE-LEGITIMATE-INTEREST` | PDPL Art. 6(4) | `DENY` | `2-7`, `2-13` | `3.2` | verified rule; mapped controls need verification |
+| `PDPL-ART15-6-SENSITIVE-DISCLOSURE` | PDPL Art. 15(6) | `DENY` | `2-7` | `3.3` | verified rule; mapped controls need verification |
+| `PDPL-ART23-HEALTH-DATA-RESTRICTION` | PDPL Art. 23(1) | `REVIEW` | `2-2`, `2-7` | — | verified rule; mapped controls need verification |
+| `PDPL-ART24-CREDIT-DATA-CONSENT` | PDPL Art. 24(1) | `REVIEW` | `2-7` | `3.2` | **inferred** rule; mapped controls need verification |
+| `PDPL-ART29-2C-CROSSBORDER-MINIMISATION` | PDPL Art. 29(2)(c) | `ALLOW_WITH_REDACTION` | `2-7`, `4-2` | `3.4` | verified rule; mapped controls need verification |
+| `PDPL-ART15-5-ANONYMISED-DISCLOSURE` | PDPL Art. 15(5) | `ALLOW_WITH_REDACTION` | `2-7`, `2-12` | — | verified rule; mapped controls need verification |
+| `PDPL-ART11-3-MINIMISATION` | PDPL Art. 11(3) | `ALLOW_WITH_REDACTION` | `2-7` | — | verified rule; mapped controls need verification |
+| `NDMO-SECRET-RESTRICTED-ACCESS` | NDMO §4.2, Principle 6 | `ALLOW_WITH_REDACTION` | `2-2`, `2-7` | — | verified rule; mapped controls need verification |
+| `NDMO-PUBLIC-ALLOW` | NDMO §4.3, **Public** | `ALLOW` | `2-12` | — | verified rule; mapped controls need verification |
+
+### NDMO classification references implemented
+
+The four NDMO levels in the map are **Public**, **Confidential**, **Secret**, and **Top Secret**. The engine applies maximum-level aggregation across findings and supports a configurable sector default.
+
+| Classification scope | Current level(s) | Confidence and review status |
+|---|---|---|
+| Saudi National ID, Iqama, Saudi IBAN, Saudi mobile | Confidential | verified; legal review required |
+| Saudi Commercial Registration number | Confidential | inferred under NDMO §4.2 Principle 2; legal review required |
+| Health, biometric, genetic, criminal, and credit sensitive-data signals | Secret | inferred, conservative automated-retrieval elevation under NDMO §4.2 Principle 2; legal review required |
+| Other detected Sensitive Data | Confidential | inferred fallback; legal review required |
+| Development-sector default | Public | verified; legal review required |
+| Security and political-sector defaults | Top Secret | verified; legal review required |
+
+For the sensitive-data elevations, the map records both English and Arabic rationale plus a citation to NDMO §4.2 Principle 2. It explicitly notes that NDMO's medical-file example is **Confidential** and that Dabt's Secret assignment is a conservative inference for a mixed or aggregated automated-retrieval context—not an authoritative NDMO classification.
+
+### Current cyber-control references
+
+| Framework | Referenced subdomains in the current map | Status |
+|---|---|---|
+| **NCA ECC-2:2024** | `2-2`, `2-7`, `2-12`, `2-13`, `4-2` | Every reference is at **subdomain** granularity and marked `needs_verification`; no leaf control ID is presented as verified. |
+| **SAMA CSF** | `3.2`, `3.3`, `3.4` | Every reference is at **subdomain** granularity and marked `needs_verification`. |
+| **NCA CSCC** | None | The current map has no NCA Critical Systems Cybersecurity Controls mappings. |
+
+The map references **SAMA CSF**, not “SAMA CSCC.” CSCC refers to an NCA control framework and is outside the current map's implemented coverage.
+
+## Architecture and repository guide
+
+| Location | Purpose |
+|---|---|
+| `dabt_python/dabt_core/` | Pure-function Python policy kernel, detectors, classifier, redaction, bilingual audit record, and validated compliance map. |
+| `dabt_python/dabt_api/` | FastAPI boundary for evaluation and read-only policy-map access. |
+| `server/` | tRPC service bridge, owner-scoped Evidence Vault, immutable reviewer evidence, and database helpers. |
+| `drizzle/` | Database schema and migrations for evidence snapshots and reviewer decisions. |
+| `client/src/` | React blueprint-style reference demo. |
+| `docs/` | Approved design, implementation plan, research notes, and Arabic QA record. |
+
+## Running the reference build
+
+```bash
+pnpm install
+pnpm check
+pnpm test
+cd dabt_python && pytest -q
+cd .. && pnpm build
+pnpm dev
+```
+
+The deployed reference demo is available at [dabt-demo-krxybfjz.manus.space](https://dabt-demo-krxybfjz.manus.space). The service is suitable for a reviewed demonstration and engineering evaluation; it should not be represented as a legal opinion or as an authoritative compliance certification.
+
+## References
+
+[1] [Saudi Data & AI Authority, *Personal Data Protection Law* (English)](https://sdaia.gov.sa/en/SDAIA/about/Documents/Personal%20Data%20English%20V2-23April2023-%20Reviewed-.pdf)
+
+[2] [National Data Management Office, *Data Classification Policy* (English)](https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf)
+
+[3] [National Cybersecurity Authority, *Essential Cybersecurity Controls (ECC-2:2024)*](https://nca.gov.sa/en/regulatory-documents/controls-list/ecc/)
+
+[4] [Saudi Central Bank, *Cyber Security Framework*](https://rulebook.sama.gov.sa/en/cyber-security-framework-2)

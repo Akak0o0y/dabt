@@ -133,3 +133,7 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Record an optional qualified-reviewer-approved NDMO classification with every immutable approval, while retaining the legal-review caveat
 - [x] Return a tRPC CONFLICT response, rather than an internal-error response, when an immutable reviewer decision is resubmitted
 - [x] Push the classification compare-view milestone as a discrete GitHub commit
+- [x] Document Dabt’s plain-language purpose, implemented capabilities, explicit non-capabilities, legal caveat, and current verified framework coverage in the README
+- [x] Re-run the complete test suite and production build without modifying engine or compliance-map behavior
+- [ ] Confirm the stable deployed demo URL reflects the final documentation checkpoint
+- [ ] Commit and push the final documentation-and-stability wrap-up as one discrete GitHub commit
