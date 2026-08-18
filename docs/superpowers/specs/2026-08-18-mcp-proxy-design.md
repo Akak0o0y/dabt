@@ -126,6 +126,12 @@ source documents.
 
 `stdout` is MCP protocol framing. Nothing else is ever written there.
 
+Records are written as UTF-8 bytes rather than through the stream's text layer.
+`sys.stderr` uses `backslashreplace` on a console that cannot represent Arabic -
+the Windows default - which turned half of every bilingual record into escape
+sequences and dropped its guillemets. A record surviving only in English is not
+the bilingual record this project claims to produce.
+
 ### 4.7 Startup refuses rather than degrades
 
 An unknown `server_id`, a missing or doubled upstream, a malformed

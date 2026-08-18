@@ -63,15 +63,32 @@ def _controls(fired_rules: Iterable[Any]) -> tuple[dict[str, str], ...]:
     return tuple(controls)
 
 
+def _subject(request: Any, surface: str) -> tuple[str, str]:
+    """Name what was evaluated, in both languages.
+
+    One engine serves two surfaces, so the record has to say which one it is
+    describing. A record that calls a tool call a retrieval misstates the event
+    it exists to evidence.
+    """
+    if surface != "action":
+        return "the retrieval", "طلب الاسترجاع"
+    tool = getattr(request, "tool", None)
+    if not tool:
+        return "the tool call", "استدعاء الأداة"
+    return f"the tool call '{tool}'", f"استدعاء الأداة «{tool}»"
+
+
 def build_audit_record(
     request: Any,
     classification: str,
     policy_decision: Any,
     obligations: Iterable[Any],
     timestamp: str,
+    surface: str = "retrieval",
 ) -> AuditRecord:
     """Build one bilingual record without exposing raw document content."""
     rule = policy_decision.rule
+    subject_en, subject_ar = _subject(request, surface)
     fired_rules = tuple(
         {
             "id": fired.id,
@@ -85,18 +102,21 @@ def build_audit_record(
         for fired in policy_decision.fired_rules
     )
     rule_name = rule.id if rule else "no matching map rule"
+    # Counted once: `obligations` may be a generator, and consuming it twice
+    # would report zero in the second language.
+    obligation_count = len(tuple(obligations))
     return AuditRecord(
         decision=str(policy_decision.decision),
         decision_rule_id=rule.id if rule else None,
         classification=classification,
         timestamp=timestamp,
         summary_en=(
-            f"Dabt evaluated the retrieval as {policy_decision.decision}; decision basis: {rule_name}. "
-            f"{len(tuple(obligations))} redaction obligation(s) were resolved."
+            f"Dabt evaluated {subject_en} as {policy_decision.decision}; decision basis: {rule_name}. "
+            f"{obligation_count} redaction obligation(s) were resolved."
         ),
         summary_ar=(
-            f"قيّمت منصة ضبط طلب الاسترجاع بالنتيجة {policy_decision.decision}؛ أساس القرار: {rule_name}. "
-            f"وتم تحديد {len(tuple(obligations))} من التزامات الحجب."
+            f"قيّمت منصة ضبط {subject_ar} بالنتيجة {policy_decision.decision}؛ أساس القرار: {rule_name}. "
+            f"وتم تحديد {obligation_count} من التزامات الحجب."
         ),
         legal_review_disclaimer_en=LEGAL_REVIEW_DISCLAIMER_EN,
         legal_review_disclaimer_ar=LEGAL_REVIEW_DISCLAIMER_AR,

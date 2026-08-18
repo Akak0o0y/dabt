@@ -173,6 +173,9 @@ Spec: `docs/superpowers/specs/2026-08-18-mcp-proxy-design.md`
 - [x] Uninspectable response content held for review, labelled as a detector limit
 - [x] Audit records carry decision and citation but never the withheld value
 - [x] `stdout` reserved for MCP framing; audit to stderr and optional file
+- [x] Audit records emitted as UTF-8 so Arabic survives a cp1252 console
+- [x] Action audit records describe a tool call rather than a retrieval
+- [x] Action audit records count the redactions actually performed
 - [x] Startup refuses on unknown server id, missing or doubled upstream
 - [x] `scaffold` drafts a manifest from a live server; never emits `verified`
 - [x] Drafted manifest proven to hold every call at REVIEW through the engine

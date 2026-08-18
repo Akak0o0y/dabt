@@ -87,15 +87,32 @@ def audit_entry(outcome: GateOutcome, timestamp: str) -> dict[str, Any]:
 
 
 class AuditSink:
-    """Writes audit records to stderr, and optionally to a file."""
+    """Writes audit records to stderr, and optionally to a file.
+
+    Records are written as UTF-8 bytes rather than through the stream's text
+    layer. `sys.stderr` uses `backslashreplace` on a console whose encoding
+    cannot represent Arabic - the Windows default - which would turn half of a
+    bilingual record into escape sequences and drop its punctuation entirely. A
+    record that survives only in English is not the bilingual record this
+    project claims to produce.
+    """
 
     def __init__(self, stream: TextIO | None = None, path: Any = None) -> None:
         self._stream = stream if stream is not None else sys.stderr
         self._path = path
 
+    def _emit(self, line: str) -> None:
+        buffer = getattr(self._stream, "buffer", None)
+        if buffer is None:  # an in-memory stream in a test; no encoding to defeat
+            self._stream.write(line + "\n")
+            self._stream.flush()
+            return
+        buffer.write((line + "\n").encode("utf-8"))
+        buffer.flush()
+
     def write(self, entry: dict[str, Any]) -> None:
         line = json.dumps(entry, ensure_ascii=False)
-        print(line, file=self._stream, flush=True)
+        self._emit(line)
         if self._path is not None:
             with open(self._path, "a", encoding="utf-8") as handle:
                 handle.write(line + "\n")

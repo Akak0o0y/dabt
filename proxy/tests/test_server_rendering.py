@@ -127,3 +127,21 @@ def test_audit_records_are_written_as_readable_arabic(tmp_path):
     AuditSink(stream=io.StringIO(), path=path).write({"reason_ar": "لم تسمح البوابة"})
 
     assert "لم تسمح البوابة" in path.read_text(encoding="utf-8")
+
+
+def test_arabic_survives_a_stream_whose_encoding_cannot_represent_it():
+    """sys.stderr uses backslashreplace on a Windows console.
+
+    Written through the text layer, half of every bilingual record arrives as
+    escape sequences and its Arabic guillemets are replaced outright - leaving a
+    record that survives only in English.
+    """
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252", errors="backslashreplace")
+    arabic = "قيّمت منصة ضبط استدعاء الأداة «ping»"
+
+    AuditSink(stream=console).write({"reason_ar": arabic})
+
+    written = raw.getvalue().decode("utf-8")
+    assert arabic in written
+    assert "\\u06" not in written, "Arabic was escaped rather than written"

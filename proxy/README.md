@@ -148,6 +148,9 @@ A record states the decision, the rule, the citation, and the finding *types*
 and element paths. It never contains the value that was withheld — a gate whose
 log holds the secret it just refused has moved the leak rather than closed it.
 
+Records are emitted as UTF-8 regardless of console encoding, so the Arabic half
+survives on a Windows terminal.
+
 ## Tests
 
 ```bash

@@ -337,7 +337,13 @@ class ActionEngine:
             spec, request, findings, classification.level.value, leg, undeclared_response_fields
         )
         policy = evaluate_policy(self._map, context)
-        audit = build_audit_record(request, classification.level.value, policy, (), timestamp)
+        # Resolved here rather than in the callers: the audit record states how
+        # many redaction obligations were resolved, so it cannot be sealed before
+        # they are known.
+        obligations = resolve_element_obligations(policy, spec, findings)
+        audit = build_audit_record(
+            request, classification.level.value, policy, obligations, timestamp, surface="action"
+        )
         selected = classification.selected_mapping
         evidence: dict[str, object] = {
             "mapping_key": selected.key if selected else None,
@@ -364,6 +370,7 @@ class ActionEngine:
             fired_rules=policy.fired_rules,
             audit=audit,
             manifest_version=manifest.version if manifest else None,
+            obligations=obligations,
         )
         return result, policy
 
@@ -372,25 +379,22 @@ class ActionEngine:
         manifest, spec = self._spec(request.server_id, request.tool)
         values = flatten_arguments(spec, request.arguments)
         findings = scan_elements(values, self._detectors)
-        result, policy = self._finish(request, spec, manifest, findings, timestamp, "request")
-        obligations = resolve_element_obligations(policy, spec, findings)
+        result, _ = self._finish(request, spec, manifest, findings, timestamp, "request")
         released: dict[str, Any] | None = None
         rewritten = False
         if result.decision in {Decision.ALLOW, Decision.ALLOW_WITH_REDACTION}:
-            redacted = apply_element_redactions(values, obligations)
+            redacted = apply_element_redactions(values, result.obligations)
             changed = _changed(values, redacted)
             released = _rebuild_arguments(request.arguments, redacted, changed)
             rewritten = bool(changed)
-        return replace(
-            result, obligations=obligations, released_arguments=released, rewritten=rewritten
-        )
+        return replace(result, released_arguments=released, rewritten=rewritten)
 
     def evaluate_result(self, request: ActionResultRequest, timestamp: str) -> ActionResult:
         """Response leg: gate the disclosure of what the act returned."""
         manifest, spec = self._spec(request.server_id, request.tool)
         values = flatten_result(spec, request.result)
         findings = scan_elements(values, self._detectors)
-        result, policy = self._finish(
+        result, _ = self._finish(
             request,
             spec,
             manifest,
@@ -399,12 +403,11 @@ class ActionEngine:
             "response",
             has_undeclared_fields(spec, request.result),
         )
-        obligations = resolve_element_obligations(policy, spec, findings)
         released: dict[str, Any] | None = None
         rewritten = False
         if result.decision in {Decision.ALLOW, Decision.ALLOW_WITH_REDACTION}:
-            redacted = apply_element_redactions(values, obligations)
+            redacted = apply_element_redactions(values, result.obligations)
             changed = _changed(values, redacted)
             released = _rebuild_result(request.result, redacted, changed)
             rewritten = bool(changed)
-        return replace(result, obligations=obligations, released_result=released, rewritten=rewritten)
+        return replace(result, released_result=released, rewritten=rewritten)
