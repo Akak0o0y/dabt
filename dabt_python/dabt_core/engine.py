@@ -109,6 +109,7 @@ class PolicyEngine:
             finding.sensitive_category for finding in findings if finding.sensitive_category
         )
         context: dict[str, object] = {
+            "surface": "retrieval",
             "classification": classification.level.value,
             "lawful_basis": request.lawful_basis,
             "event_type": request.event_type,

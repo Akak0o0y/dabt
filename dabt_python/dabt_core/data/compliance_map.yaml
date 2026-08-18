@@ -391,6 +391,7 @@ rules:
       source_url: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
     condition:
       classification: Public
+      surface: retrieval
     rationale_en: "The document is classified Public by the available data. Permit the requested retrieval while retaining an auditable decision record."
     rationale_ar: "يصنّف المستند علنياً وفق البيانات المتاحة. يُسمح بالاسترجاع المطلوب مع الاحتفاظ بسجل قرار قابل للتدقيق."
     mapped_controls:

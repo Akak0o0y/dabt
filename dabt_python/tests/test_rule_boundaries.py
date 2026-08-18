@@ -20,7 +20,7 @@ _MATCHING_CONTEXTS = {
     "PDPL-ART15-5-ANONYMISED-DISCLOSURE": {"event_type": "disclosure", "contains_personal_data": True},
     "PDPL-ART11-3-MINIMISATION": {"contains_personal_data": True, "requires_minimisation": True},
     "NDMO-SECRET-RESTRICTED-ACCESS": {"classification": "Secret", "agent_authorised": True},
-    "NDMO-PUBLIC-ALLOW": {"classification": "Public"},
+    "NDMO-PUBLIC-ALLOW": {"classification": "Public", "surface": "retrieval"},
 }
 
 
@@ -38,3 +38,8 @@ def test_every_rule_has_a_non_firing_boundary(rule_id: str) -> None:
     context[key] = (not context[key]) if isinstance(context[key], bool) else "__boundary_non_match__"
     assert rule_matches(rule, context) is False
 
+
+def test_every_map_rule_has_boundary_coverage() -> None:
+    mapped = {rule.id for rule in load_compliance_map(MAP_PATH).rules}
+    missing = sorted(mapped - set(_MATCHING_CONTEXTS))
+    assert not missing, f"rules with no boundary context: {missing}"
