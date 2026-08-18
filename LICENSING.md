@@ -1,6 +1,9 @@
 # Licensing
 
-Dabt is dual-licensed.
+Copyright © 2026 Abdulaziz Al-Dhamri.
+
+Dabt is dual-licensed. Rights in it are granted only under one of the two
+licences described below; no other rights are granted by implication.
 
 ## 1. Open source — GNU AGPL-3.0
 
@@ -33,12 +36,8 @@ Commercial terms are negotiated per engagement and may include a reviewed and
 signed-off compliance map, which the open-source distribution deliberately does
 not provide (see §4).
 
-**To enquire:** open an issue at `github.com/Akak0o0y/dabt`, or contact the
-copyright holder.
-
-> **Set a real contact address before publicising this.** No support address is
-> asserted here, because stating one that does not exist would be worse than
-> stating none.
+**To enquire:** email Abdulaziz Al-Dhamri at <abdulazizaldhamri@gmail.com>,
+or open an issue at `github.com/Akak0o0y/dabt`.
 
 ## 3. Contributions
 

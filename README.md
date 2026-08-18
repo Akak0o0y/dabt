@@ -148,5 +148,5 @@ Dual-licensed. **GNU AGPL-3.0** by default ([`LICENSE`](LICENSE)), and a
 Full terms and what they do *not* cover — notably the quoted regulatory texts,
 which are not ours to license — are in [LICENSING.md](LICENSING.md).
 
-Copyright © 2026 Abdulaziz.
+Copyright © 2026 Abdulaziz Al-Dhamri. Commercial licensing enquiries: <abdulazizaldhamri@gmail.com>.
 

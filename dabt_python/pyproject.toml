@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "dabt-core"
 version = "0.1.0"
 description = "Research-grounded Saudi privacy policy engine for AI data retrieval"
+authors = [{ name = "Abdulaziz Al-Dhamri", email = "abdulazizaldhamri@gmail.com" }]
 license = "AGPL-3.0-only"
 requires-python = ">=3.11"
 dependencies = ["PyYAML>=6.0", "fastapi>=0.115", "uvicorn>=0.30"]
