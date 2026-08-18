@@ -26,6 +26,17 @@ It is not an identity provider, not a search/RAG engine, and not a legal
 advisory service. It is the missing layer between those systems and Saudi
 regulatory reality — PDPL, NDMO classification, NCA ECC-2:2024, and SAMA CSF.
 
+**[NEW] The product thesis, stated by the founder and previously understated in
+this document:** Dabt is intended to sit *on top of agentic systems*, so that an
+agent cannot take an action contrary to the Kingdom's policy. Data retrieval is
+one class of action and the one proven first. The intended delivery route is a
+partnership with a Saudi PaaS provider that already runs MCP-based agent
+deployment and has local legal presence but no compliance layer — Dabt supplies
+that layer. Every prior revision of this handoff, including §4.1 below,
+described the Agent Action Gate as a deferred second surface. Against this
+thesis it is not a deferral: it is the product, and the retrieval gate is the
+half that proves the machinery works. §9 is re-ordered accordingly.
+
 Working name: "Dabt" (ضبط — Arabic for "control"). Not final branding.
 
 ---
@@ -365,11 +376,21 @@ observed:
   notes, and QA record existed only on the build sandbox and were nearly lost.
   They are now in git (§3.5). The two un-pushed source files in §5.3 remain at
   the same risk today.
-- **Sovereignty optics.** The demo backing a Saudi data-sovereignty product runs
-  on foreign third-party PaaS, authenticates through a foreign identity provider
-  (Manus OAuth, `server/_core/oauth.ts`), and loads a foreign debug collector
-  (`client/public/__manus__/debug-collector.js`) into the page. That is an
-  awkward question to answer in front of SDAIA.
+- **Sovereignty optics. [CORRECTED 18 Aug]** An earlier draft of this section
+  claimed the production page loads a Manus debug collector. That is wrong: the
+  collector is gated off in production (`vite.config.ts` returns the HTML
+  unmodified when `NODE_ENV === "production"`), and the live page confirms it is
+  absent. What the live page *does* load, all injected by the hosting platform
+  rather than by anything in this repository:
+  `files.manuscdn.com/manus-space-dispatcher/spaceEditor-*.js`, Umami analytics
+  (`manus-analytics.com/umami`), Plausible analytics (`plausible.io`), an
+  injected `amplitudeKey` and `apiHost: 'https://api.manus.im'`, and Google
+  Fonts. These are page-level analytics; there is no evidence any of them
+  capture the contents of the evaluation textarea, and this is not a claimed
+  data leak. It is, however, three third-party telemetry services and a foreign
+  platform script on the demo page of a data-sovereignty product — a question
+  worth not having to answer. All of it disappears on any other host, because
+  none of it is in the repository.
 - **Execution reliability.** A detailed remediation request was delivered to the
   Manus agent and not carried out; the agent transcribed its four tasks into
   `todo.md` as unchecked items and exported an archive instead.
