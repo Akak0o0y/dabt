@@ -9,6 +9,18 @@ description = "Research-grounded Saudi privacy policy engine for AI data retriev
 requires-python = ">=3.11"
 dependencies = ["PyYAML>=6.0", "fastapi>=0.115", "uvicorn>=0.30"]
 
+# Flat-layout auto-discovery cannot choose between the three top-level
+# directories here, and refuses to guess rather than ship the wrong thing.
+# api/ is the Vercel entrypoint, not part of the distribution.
+[tool.setuptools.packages.find]
+include = ["dabt_core*", "dabt_api*"]
+
+# The engine loads its compliance map and tool manifests from disk at import
+# time. A wheel built without them installs an engine that cannot start, so the
+# data has to travel with the package rather than being assumed present.
+[tool.setuptools.package-data]
+dabt_core = ["data/*.yaml", "data/manifests/*.yaml"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
