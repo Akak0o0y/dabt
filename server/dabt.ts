@@ -18,6 +18,12 @@ type DabtPayload = Record<string, unknown>;
 type FetchLike = typeof fetch;
 
 const DABT_PORT = Number(process.env.DABT_INTERNAL_PORT ?? "8743");
+// The gate fails closed, so a service that cannot start takes every gated
+// action down with it. Resolve the interpreter instead of assuming one name:
+// Debian images expose python3, Windows and some slim images expose python.
+const PYTHON_CANDIDATES = process.env.DABT_PYTHON
+  ? [process.env.DABT_PYTHON]
+  : ["python3", "python"];
 const DABT_BASE_URL = `http://127.0.0.1:${DABT_PORT}`;
 let apiProcess: ChildProcess | null = null;
 let startupPromise: Promise<void> | null = null;
@@ -41,14 +47,11 @@ async function isReady(fetchImpl: FetchLike = fetch): Promise<boolean> {
   }
 }
 
-async function ensureDabtService(): Promise<void> {
-  if (await isReady()) return;
-  if (startupPromise) return startupPromise;
-
-  startupPromise = new Promise<void>((resolve, reject) => {
+function startPolicyService(binary: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
     const pythonDir = path.resolve(process.cwd(), "dabt_python");
-    apiProcess = spawn(
-      "python3",
+    const child = spawn(
+      binary,
       ["-m", "uvicorn", "dabt_api.main:app", "--host", "127.0.0.1", "--port", String(DABT_PORT)],
       {
         cwd: pythonDir,
@@ -56,27 +59,60 @@ async function ensureDabtService(): Promise<void> {
         stdio: "ignore",
       },
     );
-    apiProcess.once("error", reject);
-    apiProcess.once("exit", code => {
-      if (code !== 0) startupPromise = null;
+    apiProcess = child;
+
+    let settled = false;
+    const settle = (fn: () => void) => {
+      if (settled) return;
+      settled = true;
+      fn();
+    };
+
+    child.once("error", error => settle(() => reject(error)));
+    child.once("exit", code => {
+      if (code !== 0) settle(() => reject(new Error(`${binary} exited with code ${code}`)));
     });
 
     let attempts = 0;
     const probe = async () => {
+      if (settled) return;
       if (await isReady()) {
-        resolve();
+        settle(resolve);
         return;
       }
       attempts += 1;
       if (attempts >= 40) {
-        startupPromise = null;
-        reject(new Error("The Dabt Python service did not become ready."));
+        settle(() => reject(new Error(`${binary} did not become ready in time`)));
         return;
       }
       setTimeout(probe, 75);
     };
     void probe();
   });
+}
+
+async function ensureDabtService(): Promise<void> {
+  if (await isReady()) return;
+  if (startupPromise) return startupPromise;
+
+  startupPromise = (async () => {
+    let lastError: Error | null = null;
+    for (const binary of PYTHON_CANDIDATES) {
+      try {
+        await startPolicyService(binary);
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        if (apiProcess && !apiProcess.killed) apiProcess.kill("SIGTERM");
+        apiProcess = null;
+      }
+    }
+    startupPromise = null;
+    throw new Error(
+      `The Dabt Python service did not become ready (tried ${PYTHON_CANDIDATES.join(", ")}). ` +
+        `Set DABT_PYTHON to the interpreter path. Last error: ${lastError?.message ?? "unknown"}`,
+    );
+  })();
   return startupPromise;
 }
 
