@@ -153,6 +153,30 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Per-element detection, obligations, and rewriting
 - [x] Two endpoints replacing the 501 stub, failing closed
 - [ ] Transcribe CranL's published tool schema and raise the manifest to `verified`
-- [ ] Reference MCP proxy (separate plan)
+- [x] Reference MCP proxy (separate plan)
 - [ ] Harden the subprocess lifecycle before pitching fail-closed as a guarantee
+
+## Reference MCP gate (`proxy/`)
+
+Spec: `docs/superpowers/specs/2026-08-18-mcp-proxy-design.md`
+
+- [x] Generic stdio MCP gate: no vendor built in, server selected by `--server-id`
+- [x] `--manifest` loads customer manifests from outside the package
+- [x] `DABT_MANIFEST_DIRS` gives the FastAPI service the same extensibility
+- [x] Request leg blocks before dispatch; upstream provably never called
+- [x] Response leg withholds a declared credential after the write completed
+- [x] Per-element redaction with aggregate classification
+- [x] Redacted structured content is not leaked through mirrored text blocks
+- [x] In-process policy evaluation by default; `--policy-url` for the HTTP path
+- [x] Both transports proven to agree on identical evaluations
+- [x] Fails closed on policy-client failure; upstream failure reported as unknown
+- [x] Uninspectable response content held for review, labelled as a detector limit
+- [x] Audit records carry decision and citation but never the withheld value
+- [x] `stdout` reserved for MCP framing; audit to stderr and optional file
+- [x] Startup refuses on unknown server id, missing or doubled upstream
+- [x] `scaffold` drafts a manifest from a live server; never emits `verified`
+- [x] Drafted manifest proven to hold every call at REVIEW through the engine
+- [x] End-to-end tests over the real MCP protocol (8) and a subprocess demo
+- [ ] Gate MCP resources, prompts, and completions (only tools are handled)
+- [ ] Preserve type of a masked structured argument rather than returning a string
 

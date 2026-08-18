@@ -1,0 +1,80 @@
+# Tool manifest for the demo-paas fixture server.
+#
+# TRANSCRIBED, NOT RECONSTRUCTED. Unlike the packaged cranl.yaml, the server this
+# describes is defined in tests/fixtures/paas_server.py in this repository. Every
+# claim below is checkable by reading that file, which is why these entries carry
+# confidence_level: verified rather than needs_verification.
+#
+# This is the manifest that lets the gate demonstrate its release, redaction and
+# credential-withholding paths. A needs_verification manifest cannot: the action
+# ALLOW rule requires tool_confidence: verified, so every call against one
+# resolves to REVIEW.
+version: "0.1.0-demo-paas"
+server:
+  id: demo-paas
+  description: "Demonstration PaaS MCP server (fixture)"
+
+tools:
+  create_database:
+    operation: create
+    resource_type: database
+    persists_data: true
+    confidence_level: verified
+    requires_legal_review: true
+    parameters:
+      region: { role: deployment_region, maskable: false }
+      name: { role: resource_name, maskable: false }
+      replicas: { role: opaque_payload, maskable: true }
+    returns:
+      connection_string:
+        role: credential
+        declared_sensitive: true
+        maskable: true
+      id:
+        role: resource_metadata
+        inspect_content: true
+        maskable: false
+
+  list_env_vars:
+    operation: read
+    resource_type: configuration
+    persists_data: false
+    confidence_level: verified
+    requires_legal_review: true
+    parameters:
+      app_id: { role: resource_reference, maskable: false }
+    returns:
+      variables:
+        role: opaque_payload
+        inspect_content: true
+        collection: true
+        maskable: true
+
+  set_env_var:
+    operation: update
+    resource_type: configuration
+    persists_data: true
+    confidence_level: verified
+    requires_legal_review: true
+    parameters:
+      key: { role: resource_name, maskable: false }
+      value: { role: opaque_payload, maskable: true }
+    returns:
+      status:
+        role: resource_metadata
+        inspect_content: true
+        maskable: false
+
+  delete_database:
+    operation: delete
+    resource_type: database
+    persists_data: true
+    confidence_level: verified
+    requires_legal_review: true
+    parameters:
+      name: { role: resource_name, maskable: false }
+    returns:
+      status:
+        role: resource_metadata
+        inspect_content: true
+        maskable: false

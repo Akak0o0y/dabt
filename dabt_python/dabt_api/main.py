@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -23,10 +24,32 @@ COMPLIANCE_MAP = load_compliance_map(MAP_PATH)
 ENGINE = PolicyEngine(COMPLIANCE_MAP)
 
 MANIFEST_DIR = Path(__file__).parents[1] / "dabt_core" / "data" / "manifests"
-MANIFESTS = {
-    manifest.server_id: manifest
-    for manifest in (load_manifest(path) for path in sorted(MANIFEST_DIR.glob("*.yaml")))
-}
+
+
+def manifest_directories() -> list[Path]:
+    """Packaged manifests first, then any directory named by DABT_MANIFEST_DIRS.
+
+    A manifest is a claim about someone else's software, so an organisation
+    gating its own MCP server needs to supply one without forking this package.
+    Later directories win on a server_id collision, which is what lets a
+    transcribed manifest supersede a reconstructed one.
+    """
+    extra = os.environ.get("DABT_MANIFEST_DIRS", "")
+    return [MANIFEST_DIR, *(Path(item) for item in extra.split(os.pathsep) if item)]
+
+
+def load_manifests() -> dict[str, Any]:
+    manifests: dict[str, Any] = {}
+    for directory in manifest_directories():
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.glob("*.yaml")):
+            manifest = load_manifest(path)
+            manifests[manifest.server_id] = manifest
+    return manifests
+
+
+MANIFESTS = load_manifests()
 ACTION_ENGINE = ActionEngine(COMPLIANCE_MAP, MANIFESTS)
 
 app = FastAPI(
