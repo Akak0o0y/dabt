@@ -43,6 +43,15 @@ nothing.
 This boundary is load-bearing. §6 specifies the rule that makes it true rather
 than aspirational.
 
+**State the guarantee at its true width.** In a partner conversation the claim
+is: *Dabt guarantees no action executes that violates Saudi data protection,
+classification, or cross-border transfer law. It does not evaluate operational
+safety such as accidental data loss, and the platform should keep its own
+confirmation step for destructive operations.* Do not let "policy layer" round
+up to "the agent cannot do anything wrong" in the room. That gap is exactly
+where a partner's trust breaks the first time a clean `delete_database` passes
+`ALLOW` and something bad happens operationally.
+
 ## 3. Architecture
 
 ```
@@ -50,7 +59,8 @@ dabt_python/dabt_core/
   manifest.py      NEW   load + validate a tool manifest, strict like schema.py
   action.py        NEW   ActionRequest / ActionResult / ActionEngine
   rules.py         NEW   rule_matches() lifted verbatim from engine.py
-  engine.py              unchanged, imports rule_matches from rules.py
+  engine.py              TWO CHANGES: import rule_matches from rules.py,
+                         and set context["surface"] = "retrieval"
   detectors/  classifier.py  redactor.py  audit.py    unchanged, reused
 
 dabt_python/dabt_api/main.py    /v1/action/evaluate and /v1/action/result
@@ -64,7 +74,14 @@ rewrites those values rather than spans in text. Classification, rule
 evaluation, obligation resolution, and bilingual audit are untouched — an action
 inherits NDMO Principle 4 aggregation and the legal-review caveat for free.
 
-Lifting `rule_matches` into `rules.py` is the only change to existing code. Both
+`engine.py` is **not** unchanged, and an earlier draft of this spec wrongly said
+it was. It takes two edits: the `rules.py` import, and one line injecting
+`surface` into its context dict. Without that second line the `surface`
+condition added to `NDMO-PUBLIC-ALLOW` in §6.3 would silently stop matching,
+because `rule_matches()` returns False for an absent key — and every genuinely
+Public document would fall through to the `REVIEW` default. See §9.1.
+
+Lifting `rule_matches` into `rules.py` is the other change to existing code. Both
 engines must match conditions identically or the surfaces drift; sharing one
 function makes that structural rather than conventional. Pure move, no behaviour
 change, covered by existing tests.
@@ -342,6 +359,13 @@ Putting the guard in the map rather than in engine code keeps it visible to a
 reviewer reading `compliance_map.yaml`, which is where every other policy
 decision in this project lives.
 
+Adding a condition to an existing rule also invalidates its hand-built test
+context. `tests/test_rule_boundaries.py` holds
+`"NDMO-PUBLIC-ALLOW": {"classification": "Public"}`, which stops matching once
+the rule requires `surface`. That entry must gain `"surface": "retrieval"`. The
+failure is the harness working correctly, but it is a required edit rather than
+a surprise.
+
 ### 6.4 Collection granularity
 
 **Redaction applies per element. Classification aggregates across all elements.**
@@ -376,6 +400,16 @@ The operational cost is real and stated plainly: if Dabt is down, CranL tool
 calls through the proxy stop. That is the correct trade for an enforcement point
 and the wrong trade for an observability tool, and Dabt is the former.
 
+**Prerequisite, not a parallel improvement.** Fail-closed makes Dabt a hard
+dependency for every gated agent action, and the reference implementation still
+spawns the policy service with a hardcoded `python3`, no restart, no backoff
+after a crash, and no rate limiting. Shipping fail-closed as a guarantee to a
+partner before that is fixed means the partner's entire agent surface freezes on
+Dabt's first crash. Hardening the subprocess lifecycle is therefore a
+precondition for pitching fail-closed as a feature. "Yes, and here is how we
+prevent that" needs a real answer before the conversation, not an honest
+acknowledgement during it.
+
 ## 8. Reference proxy
 
 Roughly 150 lines. Deliberately a demonstration harness, not a product-grade
@@ -393,6 +427,30 @@ CranL and watch the secret stop at the boundary with a cited reason, in Arabic
 and English.
 
 ## 9. Testing
+
+### 9.1 Regression proof for the `surface` change
+
+The end-to-end proof already exists and needs no new test:
+`tests/test_decisions.py::test_public_document_allows` runs a real document
+through the real engine and asserts `decision_rule_id == "NDMO-PUBLIC-ALLOW"`.
+It fails immediately if `engine.py` omits the `surface` injection. It must pass
+unchanged after the change — that is the before/after proof that retrieval
+behaviour did not shift.
+
+Two edits to existing tests are required, not optional:
+
+1. `_MATCHING_CONTEXTS["NDMO-PUBLIC-ALLOW"]` gains `"surface": "retrieval"`.
+2. Entries are added for `PDPL-ART29-2C-INFERRED-RESIDENCY`,
+   `NCA-ECC-CREDENTIAL-DISCLOSURE`, and `ACTION-DEFAULT-ALLOW-NO-FINDING`.
+
+**And a gap in the existing harness must be closed.** Both boundary tests
+parametrize over `_MATCHING_CONTEXTS`, not over the compliance map. A rule added
+to the map with no dictionary entry is silently untested and the suite stays
+green. Add `test_every_map_rule_has_boundary_coverage`, asserting every rule id
+in the loaded map appears in `_MATCHING_CONTEXTS`, so the completeness gate the
+project claims in its design spec §8 is actually enforced.
+
+### 9.2 New tests
 
 Following the existing discipline: every rule gets a firing test and a
 non-firing boundary test; every behavioural claim in this spec gets a named
