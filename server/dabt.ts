@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from "child_process";
 import path from "path";
+import { DABT_BUILD_INFO } from "./buildInfo";
 
 export type DabtEvaluateInput = {
   document: string;
@@ -120,7 +121,8 @@ export async function evaluateDabt(input: DabtEvaluateInput): Promise<DabtPayloa
 
 export async function getDabtComplianceMap(): Promise<DabtPayload> {
   await ensureDabtService();
-  return callDabtApi("/v1/compliance-map", "GET");
+  const complianceMap = await callDabtApi("/v1/compliance-map", "GET");
+  return { ...complianceMap, buildInfo: DABT_BUILD_INFO };
 }
 
 export function shutdownDabtServiceForTests(): void {
