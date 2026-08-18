@@ -100,6 +100,13 @@ NCA ECC mappings capped at subdomain granularity and marked
 
 ### 3.3 The demo application — built, tested, verified
 
+> **[SUPERSEDED 18 Aug]** The demo now lives in its own repository at
+> `github.com/Akak0o0y/dabt-demo`. This repository holds the policy layer only.
+> The coupling described below — a bridge spawning the engine from a source path
+> — was replaced by `DABT_BASE_URL`, so the demo calls a hosted engine and
+> carries no copy of it. Everything else in this section still describes the
+> demo accurately, it just lives elsewhere.
+
 React 19 + tRPC 11 + Drizzle. **[CORRECTED]** The database is **MySQL**
 (`drizzle-orm/mysql-core`, `mysql2` driver) — v2 said Postgres, which was wrong.
 Bilingual (AR/EN, RTL-correct) UI. Includes:

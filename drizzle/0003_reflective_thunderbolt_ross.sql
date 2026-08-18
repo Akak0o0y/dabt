@@ -1,1 +1,0 @@
-ALTER TABLE `auditEvidenceReviews` ADD `approvedClassification` varchar(32);

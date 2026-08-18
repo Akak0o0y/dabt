@@ -113,23 +113,35 @@ The map references **SAMA CSF**, not “SAMA CSCC.” CSCC refers to an NCA cont
 |---|---|
 | `dabt_python/dabt_core/` | Pure-function Python policy kernel, detectors, classifier, redaction, bilingual audit record, and validated compliance map. |
 | `dabt_python/dabt_api/` | FastAPI boundary for evaluation and read-only policy-map access. |
-| `server/` | tRPC service bridge, owner-scoped Evidence Vault, immutable reviewer evidence, and database helpers. |
+| `docs/` | Approved design, implementation plan, research notes with primary-source provenance, and the Arabic QA record. |
 | `drizzle/` | Database schema and migrations for evidence snapshots and reviewer decisions. |
-| `client/src/` | React blueprint-style reference demo. |
+| `dabt_python/api/` | Hosting entrypoint. On a serverless host the FastAPI app *is* the function, so there is no subprocess. |
 | `docs/` | Approved design, implementation plan, research notes, and Arabic QA record. |
 
-## Running the reference build
+## Running it
 
 ```bash
-pnpm install
-pnpm check
-pnpm test
-cd dabt_python && pytest -q
-cd .. && pnpm build
-pnpm dev
+cd dabt_python
+pip install -e .
+pytest -q                       # 181 tests
+uvicorn dabt_api.main:app --port 8743
 ```
 
-The deployed reference demo is available at [dabt-demo-krxybfjz.manus.space](https://dabt-demo-krxybfjz.manus.space). The service is suitable for a reviewed demonstration and engineering evaluation; it should not be represented as a legal opinion or as an authoritative compliance certification.
+Four endpoints: `POST /v1/retrieval/evaluate`, `POST /v1/action/evaluate`,
+`POST /v1/action/result`, and `GET /v1/compliance-map`. Every call requires an
+explicit ISO 8601 `timestamp` with a UTC offset — the engine takes its clock
+from the caller, and a decision that cannot say when it was made is not one
+worth recording.
+
+## Repositories
+
+| | |
+|---|---|
+| **This repository** | The policy layer. Engine, compliance map, tool manifests, tests, and the research behind them. This is what an integrator calls. |
+| [`Akak0o0y/dabt-demo`](https://github.com/Akak0o0y/dabt-demo) | The bilingual reference interface. Useful for showing a decision to a human; not required to use the layer. |
+
+The two are separate because they are separate things. The demo talks to a
+hosted engine over `DABT_BASE_URL` and carries no copy of it.
 
 ## References
 
