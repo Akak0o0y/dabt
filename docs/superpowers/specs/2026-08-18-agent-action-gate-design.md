@@ -180,10 +180,46 @@ A manifest entry carries `confidence_level` and `requires_legal_review` because 
 manifest is a claim about someone else's software, and that deserves the same
 epistemic treatment as a claim about a regulation.
 
+> **The tool names above are illustrative and unverified.** The landscape
+> research establishes that CranL exposes 16 MCP tools covering app deployment,
+> database creation, environment variables, and logs. It does not enumerate their
+> names or signatures. `create_database`, `set_env_var`, `get_logs`, and
+> `list_env_vars` are plausible reconstructions used here to fix the manifest
+> *shape*, not its contents. No entry may carry `confidence_level: verified`
+> until someone has read CranL's published tool schema and transcribed it. Until
+> then every entry is `needs_verification`, and by §4 an unmanifested or
+> unverified tool resolves to `REVIEW` — so an inaccurate reconstruction fails
+> safe. Reading the real schema and manifesting all 16 tools is the first task of
+> implementation.
+
 `requires_legal_review` is caveat metadata only. Verified against the code: it
 appears in `audit.py:60,81` and `engine.py:172` for emission into evidence, and
 `rule_matches()` iterates `rule.condition` exclusively. It is never a gating
 condition, so its mandatory-true value cannot produce an unconditional `REVIEW`.
+
+### 4.2 Region residency data
+
+`deployment_region_in_kingdom` is a condition key with no source defined
+elsewhere in this spec. It is derived by comparing the value of the parameter
+whose `role` is `deployment_region` against a residency table in
+`compliance_map.yaml`:
+
+```yaml
+residency:
+  in_kingdom_regions:
+    - { id: "me-central-1", provider: aws,   confidence_level: inferred, requires_legal_review: true }
+    - { id: "saudiarabia",  provider: azure, confidence_level: inferred, requires_legal_review: true }
+```
+
+The table belongs in the compliance map rather than the manifest, because "this
+region identifier denotes infrastructure inside the Kingdom" is a jurisdictional
+claim, not a fact about CranL's API. Every entry is `inferred` at best: mapping a
+provider's region code to a legal jurisdiction is an inference, and providers
+have changed region semantics before.
+
+A region identifier absent from the table is treated as **not** in the Kingdom.
+That is the conservative direction — an unrecognised region triggers the
+residency rule and lands on `REVIEW` rather than passing unexamined.
 
 ## 5. Request and result contract
 
@@ -329,6 +365,12 @@ service-error reason — never a pass-through.
 This follows from the product thesis. A gate that fails open is defeated by
 making it unavailable, which reduces "an agent cannot act contrary to policy" to
 "an agent cannot act contrary to policy while the gate happens to be up."
+
+This is deliberately a different outcome from an unmanifested tool, which
+resolves to `REVIEW`. The distinction is between a *known* state Dabt can
+describe — this tool is not declared, a human should decide — and a *failure* in
+which Dabt cannot describe anything at all. Only the second is a denial, because
+only the second leaves the gate unable to say why.
 
 The operational cost is real and stated plainly: if Dabt is down, CranL tool
 calls through the proxy stop. That is the correct trade for an enforcement point
