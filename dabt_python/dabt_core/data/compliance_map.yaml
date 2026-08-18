@@ -4,6 +4,25 @@ sources:
   ndmo: "https://sdaia.gov.sa/ndmo/Files/PoliciesEn.pdf"
   nca_ecc: "https://nca.gov.sa/en/regulatory-documents/controls-list/ecc/"
   sama_csf: "https://rulebook.sama.gov.sa/en/cyber-security-framework-2"
+# Whether a provider's region identifier denotes infrastructure inside the
+# Kingdom is a jurisdictional claim, not a fact about any vendor's API, so it
+# lives here rather than in a tool manifest. Every entry is inferred at best:
+# providers have changed region semantics before. A region absent from this
+# table is treated as outside the Kingdom.
+residency:
+  in_kingdom_regions:
+    - id: "me-central-1"
+      provider: aws
+      confidence_level: inferred
+      requires_legal_review: true
+    - id: "saudiarabia"
+      provider: azure
+      confidence_level: inferred
+      requires_legal_review: true
+    - id: "me-central2"
+      provider: gcp
+      confidence_level: inferred
+      requires_legal_review: true
 classification:
   finding_levels:
     saudi_national_id:

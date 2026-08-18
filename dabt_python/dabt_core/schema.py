@@ -124,6 +124,14 @@ class RedactionDirective:
 
 
 @dataclass(frozen=True)
+class RegionSpec:
+    id: str
+    provider: str
+    confidence_level: ConfidenceLevel
+    requires_legal_review: bool
+
+
+@dataclass(frozen=True)
 class Rule:
     id: str
     priority: int
@@ -145,6 +153,11 @@ class ComplianceMap:
     version: str
     rules: tuple[Rule, ...]
     classification: ClassificationPolicy = ClassificationPolicy()
+    residency: tuple[RegionSpec, ...] = ()
+
+    def region_in_kingdom(self, region_id: str) -> bool:
+        """Unrecognised regions are treated as outside the Kingdom, deliberately."""
+        return any(region.id == region_id for region in self.residency)
 
 
 _REQUIRED_RULE_FIELDS = (
@@ -359,6 +372,34 @@ def _parse_classification(raw: Any) -> ClassificationPolicy:
     )
 
 
+def _parse_residency(raw: Any) -> tuple[RegionSpec, ...]:
+    if raw is None:
+        return ()
+    if not isinstance(raw, Mapping):
+        raise SchemaError("residency: must be an object")
+    entries = raw.get("in_kingdom_regions") or []
+    if not isinstance(entries, list):
+        raise SchemaError("residency.in_kingdom_regions: must be a list")
+    parsed: list[RegionSpec] = []
+    for index, item in enumerate(entries, start=1):
+        label = f"residency.in_kingdom_regions[{index}]"
+        if not isinstance(item, Mapping):
+            raise SchemaError(f"{label}: must be an object")
+        parsed.append(
+            RegionSpec(
+                id=_non_empty(_require(item, "id", label), f"{label}.id"),
+                provider=_non_empty(_require(item, "provider", label), f"{label}.provider"),
+                confidence_level=_confidence(
+                    _require(item, "confidence_level", label), f"{label}.confidence_level"
+                ),
+                requires_legal_review=_legal_review(
+                    _require(item, "requires_legal_review", label), f"{label}.requires_legal_review"
+                ),
+            )
+        )
+    return tuple(parsed)
+
+
 def validate_map_payload(raw: Mapping[str, Any]) -> ComplianceMap:
     """Validate an untrusted YAML payload and return an immutable ComplianceMap."""
     if not isinstance(raw, Mapping):
@@ -378,4 +419,5 @@ def validate_map_payload(raw: Mapping[str, Any]) -> ComplianceMap:
         version=version,
         rules=tuple(sorted(rules, key=lambda rule: rule.priority)),
         classification=_parse_classification(raw.get("classification")),
+        residency=_parse_residency(raw.get("residency")),
     )
