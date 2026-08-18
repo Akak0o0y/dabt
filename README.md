@@ -1,8 +1,34 @@
-# Dabt Core / ضبط
+# Dabt / ضبط — Gulf Agent Compliance Layer
 
-> **Dabt is a Saudi-focused reference implementation for controlling AI retrieval before a payload crosses a policy boundary.** It is an engineering tool, not a regulatory determination.
+> **A regulatory compliance layer for AI agents in the Gulf.** Dabt sits in the
+> path of an AI system and decides, before the fact, whether Saudi regulation
+> permits what it is about to do. It is an engineering tool, not a regulatory
+> determination.
 
-Dabt evaluates a proposed retrieval payload, detects selected Saudi identifiers and sensitive-data signals, assigns an NDMO-oriented classification, applies the currently mapped policy rules, and returns one of four outcomes: `ALLOW`, `ALLOW_WITH_REDACTION`, `DENY`, or `REVIEW`. The demo shows the decision, the transformed release state, and the supporting bilingual evidence in English and Arabic.
+**Open for companies.** Dabt is available under the GNU AGPL-3.0, and under a
+commercial licence for organisations that cannot accept the AGPL's network
+source-disclosure obligation. See [LICENSING.md](LICENSING.md).
+
+Most AI governance tooling answers *who is this agent* and *what was it granted
+at setup*. Dabt answers a different question, at a different moment: **does Saudi
+regulation permit this specific action, on this specific content, right now?** It
+carries the jurisdiction-specific content — PDPL, NDMO classification, NCA
+ECC-2:2024, SAMA CSF — that identity platforms and enterprise search tools do not.
+
+It gates two surfaces on one deterministic engine:
+
+- **Data Retrieval Gate** — evaluates a payload before it reaches a model.
+- **Agent Action Gate** — evaluates an MCP tool call before it executes, and its
+  result before that result is disclosed back to the agent.
+
+Both return one of four outcomes: `ALLOW`, `ALLOW_WITH_REDACTION`, `DENY`, or
+`REVIEW`, with the decision, the transformed release state, and supporting
+bilingual evidence in English and Arabic.
+
+There is no model in the decision path. Detection is regex and checksums, rules
+are a validated YAML map with verbatim citations, and evaluation is a pure
+function with an injected clock — so a decision is reproducible on demand during
+an audit, and explainable by rule ID and article rather than by a score.
 
 Every rule, mapping, and classification inference is deliberately labelled with a confidence level and `requires_legal_review: true`. **Nothing in Dabt is an authoritative legal, regulatory, or classification determination.** A qualified Saudi legal or compliance professional must review the applicable facts, entity context, and source regulations before any regulatory reliance.
 
@@ -114,3 +140,13 @@ The deployed reference demo is available at [dabt-demo-krxybfjz.manus.space](htt
 [3] [National Cybersecurity Authority, *Essential Cybersecurity Controls (ECC-2:2024)*](https://nca.gov.sa/en/regulatory-documents/controls-list/ecc/)
 
 [4] [Saudi Central Bank, *Cyber Security Framework*](https://rulebook.sama.gov.sa/en/cyber-security-framework-2)
+
+## Licence
+
+Dual-licensed. **GNU AGPL-3.0** by default ([`LICENSE`](LICENSE)), and a
+**commercial licence** for use without the AGPL's source-disclosure obligation.
+Full terms and what they do *not* cover — notably the quoted regulatory texts,
+which are not ours to license — are in [LICENSING.md](LICENSING.md).
+
+Copyright © 2026 Abdulaziz.
+
