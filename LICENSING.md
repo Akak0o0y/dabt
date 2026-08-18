@@ -37,7 +37,7 @@ signed-off compliance map, which the open-source distribution deliberately does
 not provide (see §4).
 
 **To enquire:** email Abdulaziz Al-Dhamri at <abdulazizaldhamri@gmail.com>,
-or open an issue at `github.com/Akak0o0y/dabt`.
+or open an issue at `github.com/Akak0o0y/gulf-agent-compliance-layer`.
 
 ## 3. Contributions
 

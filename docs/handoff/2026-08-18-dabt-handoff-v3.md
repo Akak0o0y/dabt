@@ -1,7 +1,7 @@
 # Dabt (ضبط) — Project Handoff v3
 
 **Date:** 18 August 2026
-**Repository:** `github.com/Akak0o0y/dabt`, branch `main`, tip `9427513`
+**Repository:** `github.com/Akak0o0y/gulf-agent-compliance-layer`, branch `main`, tip `bcff9fc`
 **Live demo:** `dabt-demo-krxybfjz.manus.space` — **stale, do not cite** (see §5)
 
 This supersedes Handoff v2 (18 August 2026, 09:23 +03). Changes from v2 are
