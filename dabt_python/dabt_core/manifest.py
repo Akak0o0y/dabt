@@ -9,7 +9,10 @@ validated at load time on the same terms as a claim about a regulation.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Mapping
+
+import yaml
 
 from .schema import ConfidenceLevel
 
@@ -208,3 +211,15 @@ def validate_manifest_payload(raw: Mapping[str, Any]) -> ToolManifest:
         server_id=server_id,
         tools=tuple(_parse_tool(name, spec) for name, spec in raw_tools.items()),
     )
+
+
+def load_manifest(path: str | Path) -> ToolManifest:
+    """Read and validate a manifest once, before any evaluation can occur."""
+    try:
+        with Path(path).open("r", encoding="utf-8") as handle:
+            payload: Any = yaml.safe_load(handle)
+    except OSError as exc:
+        raise ManifestError(f"tool manifest: unable to read {path}") from exc
+    except yaml.YAMLError as exc:
+        raise ManifestError(f"tool manifest: invalid YAML in {path}") from exc
+    return validate_manifest_payload(payload)

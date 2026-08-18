@@ -1,0 +1,78 @@
+# CranL hosted PaaS MCP server.
+#
+# RECONSTRUCTED, NOT TRANSCRIBED. Landscape research establishes that CranL
+# exposes 16 MCP tools covering app deployment, database creation, environment
+# variables, and logs. It does not enumerate their names or signatures. The
+# entries below are plausible reconstructions that fix the manifest's shape.
+# Every entry is therefore needs_verification, which means every action against
+# this server resolves to REVIEW until someone reads CranL's published tool
+# schema and transcribes it. An inaccurate reconstruction fails safe.
+version: "0.1.0-cranl-reconstructed"
+server:
+  id: cranl
+  description: "CranL hosted PaaS MCP server"
+
+tools:
+  create_database:
+    operation: create
+    resource_type: database
+    persists_data: true
+    confidence_level: needs_verification
+    requires_legal_review: true
+    parameters:
+      region: { role: deployment_region, maskable: false }
+      name: { role: resource_name, maskable: false }
+    returns:
+      connection_string:
+        role: credential
+        declared_sensitive: true
+        maskable: true
+
+  set_env_var:
+    operation: update
+    resource_type: configuration
+    persists_data: true
+    confidence_level: needs_verification
+    requires_legal_review: true
+    parameters:
+      key: { role: resource_name, maskable: false }
+      value: { role: opaque_payload, maskable: true }
+
+  get_logs:
+    operation: read
+    resource_type: log
+    persists_data: false
+    confidence_level: needs_verification
+    requires_legal_review: true
+    parameters:
+      app_id: { role: resource_reference, maskable: false }
+    returns:
+      entries:
+        role: opaque_payload
+        inspect_content: true
+        collection: true
+        maskable: true
+
+  list_env_vars:
+    operation: read
+    resource_type: configuration
+    persists_data: false
+    confidence_level: needs_verification
+    requires_legal_review: true
+    parameters:
+      app_id: { role: resource_reference, maskable: false }
+    returns:
+      variables:
+        role: opaque_payload
+        inspect_content: true
+        collection: true
+        maskable: true
+
+  delete_database:
+    operation: delete
+    resource_type: database
+    persists_data: false
+    confidence_level: needs_verification
+    requires_legal_review: true
+    parameters:
+      name: { role: resource_name, maskable: false }
