@@ -9,7 +9,7 @@ finding carries the element it came from and offsets relative to that element.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Mapping
 
 from .audit import AuditRecord, build_audit_record
@@ -17,6 +17,8 @@ from .classifier import ClassificationContext, ClassificationResult, classify_fi
 from .detectors import DEFAULT_DETECTORS
 from .detectors.base import Detector, Finding
 from .manifest import ToolManifest, ToolSpec
+from .obligations import RedactionObligation
+from .redactor import apply_redactions
 from .rules import PolicyDecision, evaluate_policy
 from .schema import ComplianceMap, Decision, Rule
 
@@ -121,6 +123,94 @@ def scan_elements(
             key=lambda item: (item.element, item.finding.start, item.finding.end, item.finding.type),
         )
     )
+
+
+def _maskable(spec: ToolSpec | None, element: str) -> bool:
+    """Masking a region produces nonsense; the manifest says where masking is safe."""
+    if spec is None:
+        return False
+    name = element.split(".", 1)[1] if "." in element else element
+    name = name.split("[", 1)[0]
+    declared = spec.parameter(name) if element.startswith("arguments.") else spec.return_field(name)
+    return bool(declared and declared.maskable)
+
+
+def resolve_element_obligations(
+    policy: PolicyDecision, spec: ToolSpec | None, findings: tuple[ElementFinding, ...]
+) -> tuple[ElementObligation, ...]:
+    """Mask only where a fired rule requires it and the manifest permits it."""
+    if policy.decision != Decision.ALLOW_WITH_REDACTION:
+        return ()
+    obligations: list[ElementObligation] = []
+    for rule in policy.fired_rules:
+        directive = rule.obligation
+        if directive is None:
+            continue
+        for item in findings:
+            applies = directive.scope == "personal_data" and item.finding.is_personal_data
+            applies = applies or (
+                directive.scope == "sensitive_data" and item.finding.type == "sensitive_data"
+            )
+            if not applies or not _maskable(spec, item.element):
+                continue
+            start, end = item.finding.redaction_span
+            strategy = "full" if item.finding.type == "sensitive_data" else directive.strategy
+            obligations.append(ElementObligation(item.element, start, end, strategy))
+    return tuple(obligations)
+
+
+def apply_element_redactions(
+    values: Mapping[str, str], obligations: Iterable[ElementObligation]
+) -> dict[str, str]:
+    """Apply the retrieval gate's redactor to each element independently."""
+    grouped: dict[str, list[RedactionObligation]] = {}
+    for item in obligations:
+        grouped.setdefault(item.element, []).append(
+            RedactionObligation(item.start, item.end, "action_element", item.strategy)
+        )
+    return {
+        element: apply_redactions(text, tuple(grouped[element])) if element in grouped else text
+        for element, text in values.items()
+    }
+
+
+def _changed(values: Mapping[str, str], redacted: Mapping[str, str]) -> set[str]:
+    """Element paths whose text the redactor actually altered."""
+    return {element for element, text in redacted.items() if values.get(element) != text}
+
+
+def _rebuild_arguments(
+    original: Mapping[str, Any], redacted: Mapping[str, str], changed: set[str]
+) -> dict[str, Any]:
+    """Substitute only masked arguments, so untouched values keep their type.
+
+    Flattening stringifies every value for scanning. Rebuilding wholesale from
+    the flattened map would hand the caller back replicas="3" where it sent
+    replicas=3, so an unmasked argument is returned exactly as received.
+    """
+    rebuilt: dict[str, Any] = dict(original)
+    for element in changed:
+        rebuilt[element.split(".", 1)[1]] = redacted[element]
+    return rebuilt
+
+
+def _rebuild_result(
+    original: Mapping[str, Any], redacted: Mapping[str, str], changed: set[str]
+) -> dict[str, Any]:
+    """Reassemble the response, substituting only the elements actually masked."""
+    rebuilt: dict[str, Any] = dict(original)
+    for element in changed:
+        name = element.split(".", 1)[1]
+        if "[" in name:
+            field_name, index_part = name.split("[", 1)
+            index = int(index_part.rstrip("]"))
+            current = list(rebuilt.get(field_name) or [])
+            if index < len(current):
+                current[index] = redacted[element]
+                rebuilt[field_name] = current
+            continue
+        rebuilt[name] = redacted[element]
+    return rebuilt
 
 
 @dataclass(frozen=True)
@@ -280,15 +370,27 @@ class ActionEngine:
     def evaluate(self, request: ActionRequest, timestamp: str) -> ActionResult:
         """Request leg: gate the act itself."""
         manifest, spec = self._spec(request.server_id, request.tool)
-        findings = scan_elements(flatten_arguments(spec, request.arguments), self._detectors)
-        result, _ = self._finish(request, spec, manifest, findings, timestamp, "request")
-        return result
+        values = flatten_arguments(spec, request.arguments)
+        findings = scan_elements(values, self._detectors)
+        result, policy = self._finish(request, spec, manifest, findings, timestamp, "request")
+        obligations = resolve_element_obligations(policy, spec, findings)
+        released: dict[str, Any] | None = None
+        rewritten = False
+        if result.decision in {Decision.ALLOW, Decision.ALLOW_WITH_REDACTION}:
+            redacted = apply_element_redactions(values, obligations)
+            changed = _changed(values, redacted)
+            released = _rebuild_arguments(request.arguments, redacted, changed)
+            rewritten = bool(changed)
+        return replace(
+            result, obligations=obligations, released_arguments=released, rewritten=rewritten
+        )
 
     def evaluate_result(self, request: ActionResultRequest, timestamp: str) -> ActionResult:
         """Response leg: gate the disclosure of what the act returned."""
         manifest, spec = self._spec(request.server_id, request.tool)
-        findings = scan_elements(flatten_result(spec, request.result), self._detectors)
-        result, _ = self._finish(
+        values = flatten_result(spec, request.result)
+        findings = scan_elements(values, self._detectors)
+        result, policy = self._finish(
             request,
             spec,
             manifest,
@@ -297,4 +399,12 @@ class ActionEngine:
             "response",
             has_undeclared_fields(spec, request.result),
         )
-        return result
+        obligations = resolve_element_obligations(policy, spec, findings)
+        released: dict[str, Any] | None = None
+        rewritten = False
+        if result.decision in {Decision.ALLOW, Decision.ALLOW_WITH_REDACTION}:
+            redacted = apply_element_redactions(values, obligations)
+            changed = _changed(values, redacted)
+            released = _rebuild_result(request.result, redacted, changed)
+            rewritten = bool(changed)
+        return replace(result, obligations=obligations, released_result=released, rewritten=rewritten)
