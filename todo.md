@@ -135,5 +135,7 @@ Plan: `/home/ubuntu/dabt/docs/plans/2026-08-17-dabt-implementation.md`
 - [x] Push the classification compare-view milestone as a discrete GitHub commit
 - [x] Document Dabt’s plain-language purpose, implemented capabilities, explicit non-capabilities, legal caveat, and current verified framework coverage in the README
 - [x] Re-run the complete test suite and production build without modifying engine or compliance-map behavior
-- [ ] Confirm the stable deployed demo URL reflects the final documentation checkpoint
+- [x] Confirm the stable deployed demo URL reflects the final documentation checkpoint
+- [x] Verify a production deploy signal that maps the stable demo URL to the final documentation checkpoint or Git commit (checkpoint `9b13792a` auto-published; production root returned HTTP 200 with `Last-Modified: Mon, 17 Aug 2026 14:50:59 GMT`)
+- [ ] Add and verify a non-invasive app-visible build version signal that maps the production demo to the final Git commit
 - [ ] Commit and push the final documentation-and-stability wrap-up as one discrete GitHub commit
