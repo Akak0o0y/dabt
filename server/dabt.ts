@@ -24,7 +24,12 @@ const DABT_PORT = Number(process.env.DABT_INTERNAL_PORT ?? "8743");
 const PYTHON_CANDIDATES = process.env.DABT_PYTHON
   ? [process.env.DABT_PYTHON]
   : ["python3", "python"];
-const DABT_BASE_URL = `http://127.0.0.1:${DABT_PORT}`;
+// The policy engine is a service. Spawning one locally is a development
+// convenience; the deployment model is to call a hosted one. Setting
+// DABT_BASE_URL points the bridge at that engine and disables spawning
+// entirely, which is what lets this app run without the Python source present.
+const HOSTED_BASE_URL = process.env.DABT_BASE_URL?.replace(/\/+$/, "");
+const DABT_BASE_URL = HOSTED_BASE_URL ?? `http://127.0.0.1:${DABT_PORT}`;
 let apiProcess: ChildProcess | null = null;
 let startupPromise: Promise<void> | null = null;
 
@@ -92,6 +97,8 @@ function startPolicyService(binary: string): Promise<void> {
 }
 
 async function ensureDabtService(): Promise<void> {
+  // A hosted engine is not ours to start or stop; just use it.
+  if (HOSTED_BASE_URL) return;
   if (await isReady()) return;
   if (startupPromise) return startupPromise;
 
