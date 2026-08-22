@@ -49,9 +49,11 @@ Every rule, mapping, and classification inference is deliberately labelled with 
 | **Manifest scaffolding** | Drafts a tool manifest from a live MCP server's own `tools/list`, inferring operations and parameter roles. Every drafted entry is `needs_verification`, so an unreviewed draft holds every call at `REVIEW` — an inaccurate draft cannot permit anything. |
 | **Saudi data detection** | Detects Saudi National ID/Iqama patterns, Saudi IBANs, Saudi mobile numbers, Commercial Registration number formats, and selected PDPL Sensitive Data signals. Checksum failure lowers confidence; it does not silently suppress a finding. |
 | **Policy outcomes** | Separates `ALLOW`, `ALLOW_WITH_REDACTION`, `DENY`, and `REVIEW`. A mapping marked `needs_verification` cannot issue a terminal `DENY`; it degrades to `REVIEW`. |
-| **Evidence Vault** | Persists authenticated, owner-scoped, immutable evidence snapshots containing hashes, decision evidence, classification evidence, bilingual audit data, legal caveats, and policy-map version. It does **not** persist the source document or release payload. |
-| **Reviewer decision** | Allows an administrator to seal one bilingual `approved` or `rejected` disposition for a `REVIEW` snapshot. It is bound to the selected snapshot's integrity hash and a second write returns a conflict. |
-| **Classification reconciliation** | Displays a policy-inferred classification beside an optional qualified-reviewer classification. The comparison is explicitly non-authoritative and remains subject to professional review. |
+
+Evidence persistence, the sealed reviewer disposition, and the inferred-versus-reviewer
+classification comparison are **not** part of this repository. They belong to the bilingual
+reference interface in [`Akak0o0y/dabt-demo`](https://github.com/Akak0o0y/dabt-demo), which
+talks to a hosted engine over `DABT_BASE_URL`. Nothing in this package writes durable state.
 
 ## What Dabt explicitly does **not** do
 
@@ -77,7 +79,7 @@ This caveat appears in every audit record. It applies to all policy rules, data-
 
 The current map version is `0.1.0-research-grounded`. The following table is a transparent inventory of the rules actually implemented in `dabt_python/dabt_core/data/compliance_map.yaml`; it is not a claim of complete regulatory coverage.
 
-### PDPL and NDMO decision rules
+### Implemented decision rules
 
 | Rule ID | Framework reference | Current policy outcome | NCA ECC-2:2024 subdomains | SAMA CSF subdomains | Map confidence |
 |---|---|---|---|---|---|
@@ -91,6 +93,9 @@ The current map version is `0.1.0-research-grounded`. The following table is a t
 | `PDPL-ART11-3-MINIMISATION` | PDPL Art. 11(3) | `ALLOW_WITH_REDACTION` | `2-7` | — | verified rule; mapped controls need verification |
 | `NDMO-SECRET-RESTRICTED-ACCESS` | NDMO §4.2, Principle 6 | `ALLOW_WITH_REDACTION` | `2-2`, `2-7` | — | verified rule; mapped controls need verification |
 | `NDMO-PUBLIC-ALLOW` | NDMO §4.3, **Public** | `ALLOW` | `2-12` | — | verified rule; mapped controls need verification |
+| `PDPL-ART29-2C-INFERRED-RESIDENCY` | PDPL Art. 29(2)(c) | `REVIEW` | `4-2` | — | **inferred**: extends Art. 29 from transfer to provisioning; needs verification |
+| `NCA-ECC-CREDENTIAL-DISCLOSURE` | NCA ECC-2:2024, Subdomain 2-2 | `REVIEW` | `2-2` | — | objective quoted from a secondary listing, not the official NCA publication; needs verification |
+| `ACTION-DEFAULT-ALLOW-NO-FINDING` | NDMO §4.3, **Public** | `ALLOW` | `2-12` | — | verified rule; records the absence of a mapped objection, not lawfulness |
 
 ### NDMO classification references implemented
 
@@ -111,7 +116,7 @@ For the sensitive-data elevations, the map records both English and Arabic ratio
 
 | Framework | Referenced subdomains in the current map | Status |
 |---|---|---|
-| **NCA ECC-2:2024** | `2-2`, `2-7`, `2-12`, `2-13`, `4-2` | Every reference is at **subdomain** granularity and marked `needs_verification`; no leaf control ID is presented as verified. |
+| **NCA ECC-2:2024** | `2-2`, `2-7`, `2-12`, `2-13`, `4-2` | Every reference is at **subdomain** granularity and marked `needs_verification`; no leaf control ID is presented as verified. One rule (`NCA-ECC-CREDENTIAL-DISCLOSURE`) declares NCA ECC as its own framework rather than only as a mapped control; its quoted objective is drawn from a secondary listing, so it resolves to `REVIEW`. |
 | **SAMA CSF** | `3.2`, `3.3`, `3.4` | Every reference is at **subdomain** granularity and marked `needs_verification`. |
 | **NCA CSCC** | None | The current map has no NCA Critical Systems Cybersecurity Controls mappings. |
 
